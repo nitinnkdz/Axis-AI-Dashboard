@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import time
 import graphviz
+import numpy as np
 
 # --- 1. APP CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="🛡️")
@@ -15,10 +16,10 @@ st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", pag
 # Disable SSL warnings for RBI's legacy certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- RESTORED "PREVIOUS UI" (Clean Boardroom Style) ---
+# --- RESTORED: CLEAN BOARDROOM UI (High Contrast) ---
 st.markdown("""
     <style>
-    /* Standard Clean Background */
+    /* Main Background - Clean White */
     body { color: #000000; background-color: #ffffff; font-family: 'Helvetica', sans-serif;}
     .stApp { background-color: #ffffff; }
 
@@ -47,6 +48,9 @@ st.markdown("""
     /* Links */
     a { color: #8B0000; text-decoration: none; font-weight: bold; }
     a:hover { text-decoration: underline; }
+
+    /* Remove default Streamlit top padding */
+    .block-container { padding-top: 2rem; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -254,7 +258,6 @@ def load_full_market_portfolio():
     ])
 
 
-# --- ADDED: Module 4 Data Loader ---
 @st.cache_data
 def load_lending_offers():
     """Market Data for Module 4: Lending Sentinel"""
@@ -312,14 +315,14 @@ with st.sidebar:
                        "📊 Module 1: Market Data",
                        "🧠 Module 2: Sentiment Engine",
                        "📜 Module 3: Compliance Watch",
-                       "💸 Module 4: Lending Sentinel"])  # <--- ADDED Module 4
+                       "💸 Module 4: Lending Sentinel"])
 
     st.divider()
     if module == "💎 Strategic Overview":
         st.info("ℹ️ Welcome to the Command Center.")
     elif module == "📜 Module 3: Compliance Watch":
         st.info("ℹ️ Includes Smart PDF Scraper.")
-    elif module == "💸 Module 4: Lending Sentinel":  # <--- ADDED Info
+    elif module == "💸 Module 4: Lending Sentinel":
         st.info("ℹ️ Compare CC Loans & EMI Rates.")
     else:
         st.success("🟢 Systems Online")
@@ -337,23 +340,27 @@ if module == "💎 Strategic Overview":
     st.write("")
 
     # Standard Columns (No custom glassmorphism to ensure visibility)
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
 
     with col1:
         st.markdown("### 📊 Market Data")
         st.info("**Source:** RBI Official Reports")
-        st.markdown(
-            "Tracks Market Share, Net Additions, and Spend Quality (ATS). Definitive proof of 'Where we stand'.")
+        st.caption("Tracks Market Share & Net Additions.")
 
     with col2:
         st.markdown("### 🧠 Sentiment Engine")
         st.info("**Source:** Reddit, Twitter (X)")
-        st.markdown("Uses GenAI (Llama-3) to detect 'Rant vs. Rave' patterns. Explains 'Why we are winning/losing'.")
+        st.caption("GenAI analysis of user rants.")
 
     with col3:
         st.markdown("### 📜 Compliance Watch")
         st.info("**Source:** RBI Notifications")
-        st.markdown("Real-time scraper for Circulars & Master Directions. Early warning system for regulatory risk.")
+        st.caption("Real-time circular scraper.")
+
+    with col4:
+        st.markdown("### 💸 Lending Sentinel")
+        st.info("**Source:** Bank Rate Cards")
+        st.caption("Insta-Loan & EMI Benchmarking.")
 
     st.markdown("---")
 
@@ -464,6 +471,9 @@ elif module == "🧠 Module 2: Sentiment Engine":
 # --- 7. MODULE 3: COMPLIANCE WATCH ---
 elif module == "📜 Module 3: Compliance Watch":
     st.title("📜 Compliance Watch: RBI Circulars")
+    if 'pdf_data' not in st.session_state: st.session_state['pdf_data'] = None
+    if 'pdf_name' not in st.session_state: st.session_state['pdf_name'] = ""
+
     if st.button("🔄 Refresh"): st.cache_data.clear()
 
     with st.spinner("Fetching latest circulars..."):
@@ -485,10 +495,12 @@ elif module == "📜 Module 3: Compliance Watch":
                         st.session_state['pdf_data'] = pdf_bytes
                         st.session_state['pdf_name'] = "RBI_Circular.pdf"
                         st.success("PDF Ready!")
+                        time.sleep(0.5);
+                        st.rerun()
                     else:
                         st.error(f"Failed: {msg}")
         with c2:
-            if 'pdf_data' in st.session_state:
+            if st.session_state['pdf_data']:
                 st.download_button("⬇️ Download PDF", st.session_state['pdf_data'], st.session_state['pdf_name'])
     else:
         st.info("No recent circulars.")
