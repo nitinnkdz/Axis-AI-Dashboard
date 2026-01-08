@@ -8,7 +8,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import time
 import graphviz
-import numpy as np
 
 # --- 1. APP CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="🛡️")
@@ -16,46 +15,45 @@ st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", pag
 # Disable SSL warnings for RBI's legacy certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- RESTORED: CLEAN BOARDROOM UI (High Contrast) ---
+# --- RESTORED: THE ORIGINAL BOARDROOM UI ---
 st.markdown("""
     <style>
-    /* Main Background - Clean White */
+    /* 1. Main Background - Pure White */
     body { color: #000000; background-color: #ffffff; font-family: 'Helvetica', sans-serif;}
     .stApp { background-color: #ffffff; }
 
-    /* Metrics Box - The Burgundy Accent */
+    /* 2. Metrics Box - The Original Clean Style with Burgundy Accent */
     div[data-testid="metric-container"] {
         border-left: 5px solid #8B0000;
         background-color: #f8f9fa;
         padding: 10px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        border-radius: 5px;
     }
 
-    /* Buttons */
+    /* 3. Buttons - High Visibility */
     .stButton > button {
         background-color: #8B0000; 
         color: white;
         border-radius: 4px;
         width: 100%;
         font-weight: bold;
+        border: none;
     }
     .stButton > button:hover { background-color: #660000; color: white; }
 
-    /* Tabs */
+    /* 4. Tabs - Clean Bottom Border */
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
     .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; }
 
-    /* Links */
+    /* 5. Links */
     a { color: #8B0000; text-decoration: none; font-weight: bold; }
     a:hover { text-decoration: underline; }
-
-    /* Remove default Streamlit top padding */
-    .block-container { padding-top: 2rem; }
     </style>
     """, unsafe_allow_html=True)
 
 
-# --- 2. DATA PIPELINES ---
+# --- 2. DATA LOADERS ---
 
 @st.cache_data(ttl=3600)
 def get_rbi_market_data():
@@ -86,7 +84,6 @@ def get_rbi_market_data():
                 fh.seek(0)
                 df = pd.read_excel(fh, header=header_idx)
 
-            # Clean
             df.columns = df.columns.astype(str).str.strip().str.replace('\n', ' ')
             col_map = {'Bank': None, 'Cards': None, 'Spend': None}
             for col in df.columns:
@@ -302,6 +299,7 @@ def load_lending_offers():
 
 # --- 3. SIDEBAR NAVIGATION ---
 with st.sidebar:
+    # Use a solid Axis Bank logo or placeholder
     st.image(
         "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Axis_Bank_logo.svg/2560px-Axis_Bank_logo.svg.png",
         width=140)
@@ -311,79 +309,21 @@ with st.sidebar:
 
     # NAVIGATION
     module = st.radio("Navigation",
-                      ["💎 Strategic Overview",
-                       "📊 Module 1: Market Data",
+                      ["📊 Module 1: Market Data",
                        "🧠 Module 2: Sentiment Engine",
                        "📜 Module 3: Compliance Watch",
                        "💸 Module 4: Lending Sentinel"])
 
     st.divider()
-    if module == "💎 Strategic Overview":
-        st.info("ℹ️ Welcome to the Command Center.")
-    elif module == "📜 Module 3: Compliance Watch":
+    if module == "📜 Module 3: Compliance Watch":
         st.info("ℹ️ Includes Smart PDF Scraper.")
     elif module == "💸 Module 4: Lending Sentinel":
         st.info("ℹ️ Compare CC Loans & EMI Rates.")
     else:
         st.success("🟢 Systems Online")
 
-# --- 4. LANDING PAGE: STRATEGIC OVERVIEW (Standard UI) ---
-if module == "💎 Strategic Overview":
-    st.title("💎 Sentinel Command Center")
-    st.markdown("### AI-Led Competitive Intelligence Framework")
-    st.markdown("---")
-
-    # Introduction
-    st.markdown("""
-    **Project Sentinel** integrates **Regulatory Truth (RBI Data)** with **Customer Reality (AI Sentiment)**.
-    """)
-    st.write("")
-
-    # Standard Columns (No custom glassmorphism to ensure visibility)
-    col1, col2, col3, col4 = st.columns(4)
-
-    with col1:
-        st.markdown("### 📊 Market Data")
-        st.info("**Source:** RBI Official Reports")
-        st.caption("Tracks Market Share & Net Additions.")
-
-    with col2:
-        st.markdown("### 🧠 Sentiment Engine")
-        st.info("**Source:** Reddit, Twitter (X)")
-        st.caption("GenAI analysis of user rants.")
-
-    with col3:
-        st.markdown("### 📜 Compliance Watch")
-        st.info("**Source:** RBI Notifications")
-        st.caption("Real-time circular scraper.")
-
-    with col4:
-        st.markdown("### 💸 Lending Sentinel")
-        st.info("**Source:** Bank Rate Cards")
-        st.caption("Insta-Loan & EMI Benchmarking.")
-
-    st.markdown("---")
-
-    # AI Methodology Diagram
-    st.subheader("⚙️ Under the Hood: The AI Pipeline")
-
-    graph = graphviz.Digraph()
-    graph.attr(rankdir='LR', bgcolor='transparent')
-
-    graph.node('A', 'Unstructured Data\n(Reddit/X)', shape='note', style='filled', fillcolor='#f0f0f0')
-    graph.node('B', 'LLM Processor\n(Aspect Extraction)', shape='box', style='filled', fillcolor='#ffcccc')
-    graph.node('C', 'Sentiment Scorer\n(-1.0 to +1.0)', shape='ellipse', style='filled', fillcolor='#e0e0e0')
-    graph.node('D', 'Strategic Insight\n(Dashboard)', shape='folder', style='filled', fillcolor='#8B0000',
-               fontcolor='white')
-
-    graph.edge('A', 'B', label=' Scrape')
-    graph.edge('B', 'C', label=' Analyze')
-    graph.edge('C', 'D', label=' Visualize')
-
-    st.graphviz_chart(graph)
-
-# --- 5. MODULE 1: MARKET DATA ---
-elif module == "📊 Module 1: Market Data":
+# --- 4. MODULE 1: MARKET DATA ---
+if module == "📊 Module 1: Market Data":
     st.title("📊 The Market Truth: RBI Data Analytics")
     df_rbi, source_status = get_rbi_market_data()
     st.caption(f"Data Source: {source_status}")
@@ -421,7 +361,7 @@ elif module == "📊 Module 1: Market Data":
                     palette='viridis', ax=ax2)
         st.pyplot(fig2)
 
-# --- 6. MODULE 2: SENTIMENT ENGINE ---
+# --- 5. MODULE 2: SENTIMENT ENGINE ---
 elif module == "🧠 Module 2: Sentiment Engine":
     st.title("🧠 The Customer Pulse: AI Sentiment Engine")
     df_cards = load_full_market_portfolio()
@@ -468,7 +408,7 @@ elif module == "🧠 Module 2: Sentiment Engine":
     with tab3:
         st.dataframe(filtered_df, use_container_width=True)
 
-# --- 7. MODULE 3: COMPLIANCE WATCH ---
+# --- 6. MODULE 3: COMPLIANCE WATCH ---
 elif module == "📜 Module 3: Compliance Watch":
     st.title("📜 Compliance Watch: RBI Circulars")
     if 'pdf_data' not in st.session_state: st.session_state['pdf_data'] = None
@@ -488,8 +428,9 @@ elif module == "📜 Module 3: Compliance Watch":
 
         c1, c2 = st.columns([1, 4])
         with c1:
-            if st.button("🔎 Find PDF"):
-                with st.spinner("Scraping..."):
+            if st.button("🔎 Find PDF", key="find_pdf_btn"):
+                with st.spinner("Scraping RBI Page..."):
+                    st.session_state['pdf_data'] = None
                     pdf_bytes, msg = download_pdf_from_rbi(selected_row['Link'])
                     if pdf_bytes:
                         st.session_state['pdf_data'] = pdf_bytes
@@ -505,7 +446,7 @@ elif module == "📜 Module 3: Compliance Watch":
     else:
         st.info("No recent circulars.")
 
-# --- 8. MODULE 4: LENDING SENTINEL ---
+# --- 7. MODULE 4: LENDING SENTINEL ---
 elif module == "💸 Module 4: Lending Sentinel":
     st.title("💸 Lending Sentinel: Instant Loans & EMI")
     st.markdown("Competitive benchmarking of 'Loan on Credit Card' and 'EMI' offers.")
