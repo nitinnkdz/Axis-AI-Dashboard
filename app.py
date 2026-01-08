@@ -15,31 +15,22 @@ st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", pag
 # Disable SSL warnings for RBI's legacy certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- CUSTOM CSS (FIXED FOR VISIBILITY) ---
+# --- RESTORED "PREVIOUS UI" (Clean Boardroom Style) ---
 st.markdown("""
     <style>
-    /* 1. Force Light Theme Backgrounds & Text */
+    /* Standard Clean Background */
     body { color: #000000; background-color: #ffffff; font-family: 'Helvetica', sans-serif;}
-    .stApp { background-color: #ffffff; color: #000000; }
+    .stApp { background-color: #ffffff; }
 
-    /* 2. CRITICAL FIX: Force Alert Text to be Black */
-    div[data-testid="stAlert"] > div {
-        color: #000000 !important;
-    }
-    div[data-testid="stAlert"] p {
-        color: #000000 !important;
-    }
-
-    /* 3. Metrics Box - The Burgundy Accent */
+    /* Metrics Box - The Burgundy Accent */
     div[data-testid="metric-container"] {
         border-left: 5px solid #8B0000;
         background-color: #f8f9fa;
         padding: 10px;
         box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        color: #000000;
     }
 
-    /* 4. Buttons */
+    /* Buttons */
     .stButton > button {
         background-color: #8B0000; 
         color: white;
@@ -49,11 +40,11 @@ st.markdown("""
     }
     .stButton > button:hover { background-color: #660000; color: white; }
 
-    /* 5. Tabs */
+    /* Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 10px; }
     .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; }
 
-    /* 6. Links */
+    /* Links */
     a { color: #8B0000; text-decoration: none; font-weight: bold; }
     a:hover { text-decoration: underline; }
     </style>
@@ -187,7 +178,7 @@ def download_pdf_from_rbi(notification_url):
 def load_full_market_portfolio():
     """RESTORED: The Complete List of Cards (Axis + 12 Competitors)"""
     return pd.DataFrame([
-        # --- AXIS BANK ---
+        # --- AXIS BANK (Expanded) ---
         {"Card": "Axis Burgundy Private", "Bank": "Axis Bank", "Type": "Invite Only", "Fee": "₹0", "Yield": "4.5%",
          "Sentiment": 0.95, "Status": "Elite"},
         {"Card": "Axis Reserve", "Bank": "Axis Bank", "Type": "Super Premium", "Fee": "₹50,000", "Yield": "3.5%",
@@ -223,7 +214,7 @@ def load_full_market_portfolio():
         {"Card": "IndianOil Axis Premium", "Bank": "Axis Bank", "Type": "Fuel", "Fee": "₹1,000", "Yield": "3.0%",
          "Sentiment": 0.50, "Status": "Stable"},
 
-        # --- COMPETITORS ---
+        # --- COMPETITORS (Expanded) ---
         {"Card": "HDFC Infinia Metal", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹12,500", "Yield": "3.3%",
          "Sentiment": 0.82, "Status": "Threat"},
         {"Card": "HDFC Diners Black", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹10,000", "Yield": "3.3%",
@@ -263,6 +254,49 @@ def load_full_market_portfolio():
     ])
 
 
+# --- ADDED: Module 4 Data Loader ---
+@st.cache_data
+def load_lending_offers():
+    """Market Data for Module 4: Lending Sentinel"""
+    return pd.DataFrame([
+        # AXIS
+        {"Bank": "Axis Bank", "Product": "Insta Loan (CC)", "ROI_Min": 15.0, "ROI_Max": 18.0,
+         "Proc_Fee": "2% (Min ₹500)", "Tenure": "12-60 mo", "Type": "Loan"},
+        {"Bank": "Axis Bank", "Product": "Merchant EMI", "ROI_Min": 13.0, "ROI_Max": 15.0, "Proc_Fee": "1% (Max ₹1000)",
+         "Tenure": "3-24 mo", "Type": "EMI"},
+
+        # HDFC
+        {"Bank": "HDFC Bank", "Product": "Jumbo Loan", "ROI_Min": 14.5, "ROI_Max": 17.5, "Proc_Fee": "₹999 + GST",
+         "Tenure": "12-60 mo", "Type": "Loan"},
+        {"Bank": "HDFC Bank", "Product": "Smart EMI", "ROI_Min": 15.0, "ROI_Max": 20.0, "Proc_Fee": "₹499 + GST",
+         "Tenure": "6-36 mo", "Type": "EMI"},
+
+        # ICICI
+        {"Bank": "ICICI Bank", "Product": "Personal Loan on CC", "ROI_Min": 14.99, "ROI_Max": 16.99, "Proc_Fee": "1.5%",
+         "Tenure": "12-60 mo", "Type": "Loan"},
+        {"Bank": "ICICI Bank", "Product": "EMI on Call", "ROI_Min": 13.99, "ROI_Max": 15.99, "Proc_Fee": "1.99%",
+         "Tenure": "3-24 mo", "Type": "EMI"},
+
+        # SBI
+        {"Bank": "SBI Card", "Product": "Encash", "ROI_Min": 14.5, "ROI_Max": 19.0, "Proc_Fee": "2% (Min ₹499)",
+         "Tenure": "12-48 mo", "Type": "Loan"},
+        {"Bank": "SBI Card", "Product": "Flexipay", "ROI_Min": 18.0, "ROI_Max": 22.0, "Proc_Fee": "2%",
+         "Tenure": "6-24 mo", "Type": "EMI"},
+
+        # OTHERS
+        {"Bank": "Kotak Mahindra", "Product": "Smart EMI", "ROI_Min": 15.0, "ROI_Max": 21.0, "Proc_Fee": "2%",
+         "Tenure": "6-48 mo", "Type": "EMI"},
+        {"Bank": "IndusInd Bank", "Product": "Loan on Card", "ROI_Min": 13.0, "ROI_Max": 24.0, "Proc_Fee": "2.5%",
+         "Tenure": "6-36 mo", "Type": "Loan"},
+        {"Bank": "RBL Bank", "Product": "Split n Pay", "ROI_Min": 18.0, "ROI_Max": 24.0, "Proc_Fee": "1.5%",
+         "Tenure": "3-24 mo", "Type": "EMI"},
+        {"Bank": "IDFC FIRST", "Product": "Insta EMI", "ROI_Min": 14.0, "ROI_Max": 18.0, "Proc_Fee": "1%",
+         "Tenure": "3-36 mo", "Type": "EMI"},
+        {"Bank": "American Express", "Product": "Pay in Parts", "ROI_Min": 18.0, "ROI_Max": 22.0, "Proc_Fee": "2%",
+         "Tenure": "6-24 mo", "Type": "EMI"}
+    ])
+
+
 # --- 3. SIDEBAR NAVIGATION ---
 with st.sidebar:
     st.image(
@@ -277,13 +311,16 @@ with st.sidebar:
                       ["💎 Strategic Overview",
                        "📊 Module 1: Market Data",
                        "🧠 Module 2: Sentiment Engine",
-                       "📜 Module 3: Compliance Watch"])
+                       "📜 Module 3: Compliance Watch",
+                       "💸 Module 4: Lending Sentinel"])  # <--- ADDED Module 4
 
     st.divider()
     if module == "💎 Strategic Overview":
         st.info("ℹ️ Welcome to the Command Center.")
     elif module == "📜 Module 3: Compliance Watch":
         st.info("ℹ️ Includes Smart PDF Scraper.")
+    elif module == "💸 Module 4: Lending Sentinel":  # <--- ADDED Info
+        st.info("ℹ️ Compare CC Loans & EMI Rates.")
     else:
         st.success("🟢 Systems Online")
 
@@ -455,3 +492,91 @@ elif module == "📜 Module 3: Compliance Watch":
                 st.download_button("⬇️ Download PDF", st.session_state['pdf_data'], st.session_state['pdf_name'])
     else:
         st.info("No recent circulars.")
+
+# --- 8. MODULE 4: LENDING SENTINEL ---
+elif module == "💸 Module 4: Lending Sentinel":
+    st.title("💸 Lending Sentinel: Instant Loans & EMI")
+    st.markdown("Competitive benchmarking of 'Loan on Credit Card' and 'EMI' offers.")
+
+    df_loan = load_lending_offers()
+
+    # Tabs
+    tab1, tab2, tab3 = st.tabs(["⚖️ Rate Comparator", "🧮 EMI Calculator", "📋 Market Scanner"])
+
+    with tab1:
+        st.subheader("Head-to-Head: Loan on Card")
+        col_bench, col_comp = st.columns(2)
+        with col_bench:
+            axis_prod = st.selectbox("Axis Product", df_loan[df_loan['Bank'] == 'Axis Bank']['Product'].unique())
+        with col_comp:
+            rival_bank = st.selectbox("Competitor Bank", df_loan[df_loan['Bank'] != 'Axis Bank']['Bank'].unique())
+            rival_prod_opts = df_loan[df_loan['Bank'] == rival_bank]['Product'].unique()
+            rival_prod = st.selectbox("Competitor Product", rival_prod_opts if len(rival_prod_opts) > 0 else ["N/A"])
+
+        if rival_prod != "N/A":
+            a_l = df_loan[(df_loan['Bank'] == 'Axis Bank') & (df_loan['Product'] == axis_prod)].iloc[0]
+            r_l = df_loan[(df_loan['Bank'] == rival_bank) & (df_loan['Product'] == rival_prod)].iloc[0]
+
+            st.markdown(f"""
+            <div style="display: flex; gap: 20px; margin-top: 15px;">
+                <div style="flex: 1; padding: 20px; background: #fff5f5; border: 2px solid #8B0000; border-radius: 10px;">
+                    <h4 style="color:#8B0000; margin:0;">{a_l['Bank']} - {a_l['Product']}</h4>
+                    <h1>{a_l['ROI_Min']}% <small style="font-size:16px; color:gray;">to {a_l['ROI_Max']}%</small></h1>
+                    <p><b>Proc Fee:</b> {a_l['Proc_Fee']}</p>
+                    <p><b>Tenure:</b> {a_l['Tenure']}</p>
+                </div>
+                <div style="flex: 1; padding: 20px; background: #f9f9f9; border: 1px solid #ccc; border-radius: 10px;">
+                    <h4 style="color:#333; margin:0;">{r_l['Bank']} - {r_l['Product']}</h4>
+                    <h1>{r_l['ROI_Min']}% <small style="font-size:16px; color:gray;">to {r_l['ROI_Max']}%</small></h1>
+                    <p><b>Proc Fee:</b> {r_l['Proc_Fee']}</p>
+                    <p><b>Tenure:</b> {r_l['Tenure']}</p>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+
+            diff = r_l['ROI_Min'] - a_l['ROI_Min']
+            if diff > 0:
+                st.success(f"✅ Axis is cheaper by {diff:.2f}% p.a.")
+            else:
+                st.error(f"⚠️ Axis is more expensive by {abs(diff):.2f}% p.a.")
+
+    with tab2:
+        st.subheader("Interactive EMI Calculator")
+
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            loan_amt = st.number_input("Loan Amount (₹)", 50000, 1000000, 100000, step=10000)
+        with c2:
+            tenure = st.slider("Tenure (Months)", 6, 60, 12)
+        with c3:
+            axis_rate = st.number_input("Axis Rate (%)", 10.0, 24.0, 15.0)
+            rival_rate = st.number_input("Rival Rate (%)", 10.0, 24.0, 14.5)
+
+
+        # Calculation Logic
+        def calc_emi(p, r, n):
+            r_mon = r / (12 * 100)
+            return p * r_mon * ((1 + r_mon) ** n) / (((1 + r_mon) ** n) - 1)
+
+
+        emi_axis = calc_emi(loan_amt, axis_rate, tenure)
+        emi_rival = calc_emi(loan_amt, rival_rate, tenure)
+        total_axis = emi_axis * tenure
+        total_rival = emi_rival * tenure
+
+        st.divider()
+        k1, k2, k3 = st.columns(3)
+        with k1:
+            st.metric("Axis Monthly EMI", f"₹{emi_axis:,.0f}")
+        with k2:
+            st.metric("Rival Monthly EMI", f"₹{emi_rival:,.0f}", delta=f"₹{emi_axis - emi_rival:,.0f} diff")
+        with k3:
+            savings = total_axis - total_rival
+            if savings < 0:
+                st.metric("Total Savings with Axis", f"₹{abs(savings):,.0f}", delta_color="normal")
+            else:
+                st.metric("Extra Cost with Axis", f"₹{savings:,.0f}", delta_color="inverse")
+
+    with tab3:
+        st.subheader("Market Scanner (Top 15 Banks)")
+        st.dataframe(df_loan, use_container_width=True)
