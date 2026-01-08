@@ -10,77 +10,65 @@ import time
 import graphviz
 
 # --- 1. APP CONFIGURATION ---
-st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Strategy", page_icon="💎")
+st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="🛡️")
 
 # Disable SSL warnings for RBI's legacy certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- CUSTOM CSS FOR "GEMSTONE" UI ---
+# --- CUSTOM CSS (FIXED FOR VISIBILITY) ---
 st.markdown("""
     <style>
-    /* Main Background */
-    body { color: #1E1E1E; background-color: #FAFAFA; font-family: 'Helvetica Neue', sans-serif;}
-    .stApp { background-color: #FAFAFA; }
+    /* 1. Force Light Theme Backgrounds & Text */
+    body { color: #000000; background-color: #ffffff; font-family: 'Helvetica', sans-serif;}
+    .stApp { background-color: #ffffff; color: #000000; }
 
-    /* Gemstone Headers */
-    h1, h2, h3 { color: #8B0000; font-weight: 700; }
-
-    /* Glassmorphism Cards for Overview */
-    .glass-card {
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        transition: transform 0.2s;
+    /* 2. CRITICAL FIX: Force Alert Text to be Black */
+    div[data-testid="stAlert"] > div {
+        color: #000000 !important;
     }
-    .glass-card:hover { transform: translateY(-3px); border-color: #8B0000; }
+    div[data-testid="stAlert"] p {
+        color: #000000 !important;
+    }
 
-    /* Metrics Box */
+    /* 3. Metrics Box - The Burgundy Accent */
     div[data-testid="metric-container"] {
         border-left: 5px solid #8B0000;
-        background-color: #ffffff;
-        padding: 15px;
-        border-radius: 8px;
-        box-shadow: 2px 2px 10px rgba(0,0,0,0.05);
+        background-color: #f8f9fa;
+        padding: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        color: #000000;
     }
 
-    /* Buttons */
+    /* 4. Buttons */
     .stButton > button {
         background-color: #8B0000; 
         color: white;
-        border-radius: 6px;
-        height: 45px;
-        font-weight: 600;
-        border: none;
+        border-radius: 4px;
         width: 100%;
+        font-weight: bold;
     }
-    .stButton > button:hover { background-color: #660000; color: #fff; }
+    .stButton > button:hover { background-color: #660000; color: white; }
 
-    /* Sidebar styling */
-    section[data-testid="stSidebar"] {
-        background-color: #f0f2f6;
-    }
+    /* 5. Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; }
 
-    /* Custom Links */
+    /* 6. Links */
     a { color: #8B0000; text-decoration: none; font-weight: bold; }
+    a:hover { text-decoration: underline; }
     </style>
     """, unsafe_allow_html=True)
 
 
-# --- 2. CACHED DATA LOADERS ---
+# --- 2. DATA PIPELINES ---
 
 @st.cache_data(ttl=3600)
 def get_rbi_market_data():
     """Attempts to fetch LIVE market data from RBI. Falls back to verified snapshot."""
     try:
-        # Live Scrape Logic
         base_url = "https://www.rbi.org.in/Scripts/ATMView.aspx"
         headers = {"User-Agent": "Mozilla/5.0"}
-        response = requests.get(base_url, headers=headers, verify=False, timeout=3)
+        response = requests.get(base_url, headers=headers, verify=False, timeout=5)
         soup = BeautifulSoup(response.text, 'html.parser')
 
         target_link = None
@@ -127,7 +115,6 @@ def get_rbi_market_data():
                     lambda x: x['Total_Spend'] / x['Active_Cards'] if x['Active_Cards'] > 0 else 0, axis=1)
                 final_df = final_df.sort_values(by='Active_Cards', ascending=False).reset_index(drop=True)
                 return final_df, "🟢 Live RBI Data"
-
     except Exception:
         pass
 
@@ -198,9 +185,9 @@ def download_pdf_from_rbi(notification_url):
 
 @st.cache_data
 def load_full_market_portfolio():
-    """Expanded list of active Credit Cards."""
+    """RESTORED: The Complete List of Cards (Axis + 12 Competitors)"""
     return pd.DataFrame([
-        # AXIS
+        # --- AXIS BANK ---
         {"Card": "Axis Burgundy Private", "Bank": "Axis Bank", "Type": "Invite Only", "Fee": "₹0", "Yield": "4.5%",
          "Sentiment": 0.95, "Status": "Elite"},
         {"Card": "Axis Reserve", "Bank": "Axis Bank", "Type": "Super Premium", "Fee": "₹50,000", "Yield": "3.5%",
@@ -219,28 +206,58 @@ def load_full_market_portfolio():
          "Sentiment": 0.55, "Status": "New"},
         {"Card": "Axis Select", "Bank": "Axis Bank", "Type": "Lifestyle", "Fee": "₹3,000", "Yield": "1.8%",
          "Sentiment": 0.40, "Status": "Weak"},
+        {"Card": "Axis Privilege", "Bank": "Axis Bank", "Type": "Lifestyle", "Fee": "₹1,500", "Yield": "1.5%",
+         "Sentiment": 0.45, "Status": "Stable"},
+        {"Card": "Axis MyZone", "Bank": "Axis Bank", "Type": "Entry", "Fee": "₹500", "Yield": "1.0%", "Sentiment": 0.70,
+         "Status": "Mass Market"},
+        {"Card": "Axis Neo", "Bank": "Axis Bank", "Type": "Entry", "Fee": "₹250", "Yield": "0.8%", "Sentiment": 0.60,
+         "Status": "Mass Market"},
         {"Card": "Axis Ace", "Bank": "Axis Bank", "Type": "Cashback", "Fee": "₹499", "Yield": "2.0%", "Sentiment": 0.88,
          "Status": "Leader"},
+        {"Card": "Flipkart Axis Bank", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹500", "Yield": "1.5%",
+         "Sentiment": 0.65, "Status": "High Volume"},
         {"Card": "Airtel Axis Bank", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹500", "Yield": "10%",
          "Sentiment": 0.90, "Status": "Segment Leader"},
+        {"Card": "Samsung Axis Infinite", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹5,000", "Yield": "10%",
+         "Sentiment": 0.60, "Status": "Niche"},
+        {"Card": "IndianOil Axis Premium", "Bank": "Axis Bank", "Type": "Fuel", "Fee": "₹1,000", "Yield": "3.0%",
+         "Sentiment": 0.50, "Status": "Stable"},
 
-        # COMPETITORS
+        # --- COMPETITORS ---
         {"Card": "HDFC Infinia Metal", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹12,500", "Yield": "3.3%",
          "Sentiment": 0.82, "Status": "Threat"},
+        {"Card": "HDFC Diners Black", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹10,000", "Yield": "3.3%",
+         "Sentiment": 0.78, "Status": "Stable"},
         {"Card": "HDFC Regalia Gold", "Bank": "HDFC Bank", "Type": "Premium", "Fee": "₹2,500", "Yield": "1.8%",
          "Sentiment": 0.60, "Status": "Volume"},
+        {"Card": "HDFC Swiggy", "Bank": "HDFC Bank", "Type": "Lifestyle", "Fee": "₹500", "Yield": "10%",
+         "Sentiment": 0.75, "Status": "Rising"},
         {"Card": "SBI Cashback", "Bank": "SBI Card", "Type": "Cashback", "Fee": "₹999", "Yield": "5.0%",
          "Sentiment": 0.65, "Status": "High Threat"},
+        {"Card": "SBI Aurum", "Bank": "SBI Card", "Type": "Super Premium", "Fee": "₹10,000", "Yield": "2.5%",
+         "Sentiment": 0.55, "Status": "Niche"},
         {"Card": "ICICI Amazon Pay", "Bank": "ICICI Bank", "Type": "Shopping", "Fee": "₹0", "Yield": "5.0%",
          "Sentiment": 0.90, "Status": "Volume Leader"},
+        {"Card": "ICICI Emeralde Metal", "Bank": "ICICI Bank", "Type": "Super Premium", "Fee": "₹12,000",
+         "Yield": "3.0%", "Sentiment": 0.60, "Status": "Stable"},
         {"Card": "Amex Platinum Charge", "Bank": "American Express", "Type": "Super Premium", "Fee": "₹66,000",
          "Yield": "Variable", "Sentiment": 0.85, "Status": "Brand Leader"},
+        {"Card": "Amex Gold Charge", "Bank": "American Express", "Type": "Premium", "Fee": "₹4,500",
+         "Yield": "Variable", "Sentiment": 0.78, "Status": "Cult Fav"},
         {"Card": "Kotak White Reserve", "Bank": "Kotak Mahindra", "Type": "Super Premium", "Fee": "₹12,500",
          "Yield": "2.0%", "Sentiment": 0.50, "Status": "Niche"},
         {"Card": "IDFC First Wealth", "Bank": "IDFC FIRST", "Type": "Premium", "Fee": "₹0", "Yield": "1.5%",
          "Sentiment": 0.78, "Status": "Stable"},
+        {"Card": "IDFC First WOW", "Bank": "IDFC FIRST", "Type": "Secured", "Fee": "₹0", "Yield": "0.5%",
+         "Sentiment": 0.90, "Status": "Leader"},
         {"Card": "IndusInd EazyDiner", "Bank": "IndusInd Bank", "Type": "Dining", "Fee": "₹1,999", "Yield": "5-10%",
          "Sentiment": 0.85, "Status": "Segment Leader"},
+        {"Card": "RBL World Safari", "Bank": "RBL Bank", "Type": "Travel", "Fee": "₹3,000", "Yield": "0% Forex",
+         "Sentiment": 0.65, "Status": "Niche"},
+        {"Card": "Yes Bank Marquee", "Bank": "Yes Bank", "Type": "Premium", "Fee": "₹9,999", "Yield": "2.5%",
+         "Sentiment": 0.60, "Status": "Stable"},
+        {"Card": "Federal Scapia", "Bank": "Federal Bank", "Type": "Travel", "Fee": "₹0", "Yield": "2.0%",
+         "Sentiment": 0.80, "Status": "Disruptor"},
         {"Card": "OneCard Metal", "Bank": "OneCard", "Type": "Fintech", "Fee": "₹0", "Yield": "1.0%", "Sentiment": 0.75,
          "Status": "Popular"}
     ])
@@ -263,9 +280,14 @@ with st.sidebar:
                        "📜 Module 3: Compliance Watch"])
 
     st.divider()
-    st.caption("v2.5.0 | Live Build")
+    if module == "💎 Strategic Overview":
+        st.info("ℹ️ Welcome to the Command Center.")
+    elif module == "📜 Module 3: Compliance Watch":
+        st.info("ℹ️ Includes Smart PDF Scraper.")
+    else:
+        st.success("🟢 Systems Online")
 
-# --- 4. LANDING PAGE: STRATEGIC OVERVIEW ---
+# --- 4. LANDING PAGE: STRATEGIC OVERVIEW (Standard UI) ---
 if module == "💎 Strategic Overview":
     st.title("💎 Sentinel Command Center")
     st.markdown("### AI-Led Competitive Intelligence Framework")
@@ -273,49 +295,34 @@ if module == "💎 Strategic Overview":
 
     # Introduction
     st.markdown("""
-    Welcome to **Project Sentinel**. This platform integrates **Regulatory Truth (RBI)** with **Customer Reality (AI Sentiment)** to provide a 360-degree view of the credit card ecosystem.
+    **Project Sentinel** integrates **Regulatory Truth (RBI Data)** with **Customer Reality (AI Sentiment)**.
     """)
     st.write("")
 
-    # Module Cards (Glassmorphism)
+    # Standard Columns (No custom glassmorphism to ensure visibility)
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.markdown("""
-        <div class="glass-card">
-            <h3>📊 Market Data</h3>
-            <p><b>Source:</b> RBI Official Reports</p>
-            <p><b>Function:</b> Tracks Market Share, Net Additions, and Spend Quality (ATS).</p>
-            <p><b>Value:</b> Definitive proof of "Where we stand" vs. HDFC/SBI.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 📊 Market Data")
+        st.info("**Source:** RBI Official Reports")
+        st.markdown(
+            "Tracks Market Share, Net Additions, and Spend Quality (ATS). Definitive proof of 'Where we stand'.")
 
     with col2:
-        st.markdown("""
-        <div class="glass-card">
-            <h3>🧠 Sentiment Engine</h3>
-            <p><b>Source:</b> Reddit, Twitter (X), Forums</p>
-            <p><b>Function:</b> Uses GenAI (Llama-3) to detect "Rant vs. Rave" patterns.</p>
-            <p><b>Value:</b> Explains "Why we are winning/losing" before data reports it.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 🧠 Sentiment Engine")
+        st.info("**Source:** Reddit, Twitter (X)")
+        st.markdown("Uses GenAI (Llama-3) to detect 'Rant vs. Rave' patterns. Explains 'Why we are winning/losing'.")
 
     with col3:
-        st.markdown("""
-        <div class="glass-card">
-            <h3>📜 Compliance Watch</h3>
-            <p><b>Source:</b> RBI Notifications Page</p>
-            <p><b>Function:</b> Real-time scraper for Circulars & Master Directions.</p>
-            <p><b>Value:</b> Early warning system for regulatory risk.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 📜 Compliance Watch")
+        st.info("**Source:** RBI Notifications")
+        st.markdown("Real-time scraper for Circulars & Master Directions. Early warning system for regulatory risk.")
 
     st.markdown("---")
 
     # AI Methodology Diagram
     st.subheader("⚙️ Under the Hood: The AI Pipeline")
 
-    # Create Graphviz Chart
     graph = graphviz.Digraph()
     graph.attr(rankdir='LR', bgcolor='transparent')
 
@@ -330,9 +337,6 @@ if module == "💎 Strategic Overview":
     graph.edge('C', 'D', label=' Visualize')
 
     st.graphviz_chart(graph)
-
-    st.info(
-        "ℹ️ **Note:** This system utilizes 'Aspect-Based Sentiment Analysis'. We don't just measure if a user is angry; we measure *what* they are angry about (e.g., Rewards vs. App UI vs. Fees).")
 
 # --- 5. MODULE 1: MARKET DATA ---
 elif module == "📊 Module 1: Market Data":
@@ -383,7 +387,7 @@ elif module == "🧠 Module 2: Sentiment Engine":
                                  default=['HDFC Bank', 'SBI Card', 'American Express'])
     filtered_df = df_cards[df_cards['Bank'].isin(competitors + ['Axis Bank'])]
 
-    tab1, tab2, tab3 = st.tabs(["⚔️ Head-to-Head", "📉 Live Analysis", "📚 Database"])
+    tab1, tab2, tab3 = st.tabs(["⚔️ Head-to-Head", "📉 Live Analysis", "📚 Full Database"])
 
     with tab1:
         c1, c2 = st.columns(2)
