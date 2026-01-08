@@ -8,68 +8,54 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import time
 import graphviz
-import numpy as np
 
 # --- 1. APP CONFIGURATION ---
-st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="💎")
+st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="🛡️")
 
-# Disable SSL warnings
+# Disable SSL warnings for RBI's legacy certificates
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- THEME-ADAPTIVE "GEMSTONE" UI ---
+# --- RESTORED "PREVIOUS UI" (Clean Boardroom Style) ---
 st.markdown("""
     <style>
-    /* 1. ADAPTIVE CARD DESIGN (The "Gemstone" Look that works in Dark Mode) */
-    .gemstone-card {
-        background-color: var(--secondary-background-color); /* Auto-adapts to Light/Dark */
-        border: 1px solid rgba(139, 0, 0, 0.2); /* Subtle Burgundy Border */
-        border-left: 5px solid #8B0000; /* Burgundy Accent */
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        transition: transform 0.2s;
-    }
-    .gemstone-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    /* Standard Clean Background */
+    body { color: #000000; background-color: #ffffff; font-family: 'Helvetica', sans-serif;}
+    .stApp { background-color: #ffffff; }
+
+    /* Metrics Box - The Burgundy Accent */
+    div[data-testid="metric-container"] {
+        border-left: 5px solid #8B0000;
+        background-color: #f8f9fa;
+        padding: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
     }
 
-    /* 2. TEXT ADAPTATION */
-    h1, h2, h3, h4, strong {
-        color: var(--text-color) !important; /* Auto-adapts */
-    }
-    .gemstone-header {
-        color: #8B0000 !important; /* Axis Burgundy for Headers */
-        font-weight: bold;
-        font-size: 1.2rem;
-        margin-bottom: 10px;
-    }
-
-    /* 3. BUTTONS */
+    /* Buttons */
     .stButton > button {
         background-color: #8B0000; 
         color: white;
-        border-radius: 6px;
+        border-radius: 4px;
+        width: 100%;
         font-weight: bold;
-        border: none;
     }
     .stButton > button:hover { background-color: #660000; color: white; }
 
-    /* 4. TABS */
-    .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; color: #8B0000; }
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; }
 
-    /* 5. LINKS */
-    a { color: #8B0000 !important; text-decoration: none; font-weight: bold; }
+    /* Links */
+    a { color: #8B0000; text-decoration: none; font-weight: bold; }
+    a:hover { text-decoration: underline; }
     </style>
     """, unsafe_allow_html=True)
 
 
-# --- 2. DATA LOADERS ---
+# --- 2. DATA PIPELINES ---
 
 @st.cache_data(ttl=3600)
 def get_rbi_market_data():
-    """Attempts to fetch LIVE market data from RBI."""
+    """Attempts to fetch LIVE market data from RBI. Falls back to verified snapshot."""
     try:
         base_url = "https://www.rbi.org.in/Scripts/ATMView.aspx"
         headers = {"User-Agent": "Mozilla/5.0"}
@@ -96,6 +82,7 @@ def get_rbi_market_data():
                 fh.seek(0)
                 df = pd.read_excel(fh, header=header_idx)
 
+            # Clean
             df.columns = df.columns.astype(str).str.strip().str.replace('\n', ' ')
             col_map = {'Bank': None, 'Cards': None, 'Spend': None}
             for col in df.columns:
@@ -189,55 +176,81 @@ def download_pdf_from_rbi(notification_url):
 
 @st.cache_data
 def load_full_market_portfolio():
-    """Complete List of Cards (Axis + Competitors)"""
+    """RESTORED: The Complete List of Cards (Axis + 12 Competitors)"""
     return pd.DataFrame([
-        # AXIS
+        # --- AXIS BANK (Expanded) ---
         {"Card": "Axis Burgundy Private", "Bank": "Axis Bank", "Type": "Invite Only", "Fee": "₹0", "Yield": "4.5%",
          "Sentiment": 0.95, "Status": "Elite"},
         {"Card": "Axis Reserve", "Bank": "Axis Bank", "Type": "Super Premium", "Fee": "₹50,000", "Yield": "3.5%",
          "Sentiment": 0.65, "Status": "Review"},
+        {"Card": "Axis Magnus for Burgundy", "Bank": "Axis Bank", "Type": "Super Premium", "Fee": "₹30,000",
+         "Yield": "3.8%", "Sentiment": 0.45, "Status": "Recovering"},
         {"Card": "Axis Magnus", "Bank": "Axis Bank", "Type": "Super Premium", "Fee": "₹12,500", "Yield": "2.8%",
          "Sentiment": 0.25, "Status": "Devalued"},
+        {"Card": "Axis Olympus", "Bank": "Axis Bank", "Type": "Premium", "Fee": "₹20,000", "Yield": "3.0%",
+         "Sentiment": 0.70, "Status": "Stable"},
         {"Card": "Axis Atlas", "Bank": "Axis Bank", "Type": "Travel", "Fee": "₹5,000", "Yield": "3.2%",
          "Sentiment": 0.75, "Status": "Strong"},
+        {"Card": "Axis Vistara Infinite", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹10,000", "Yield": "4.0%",
+         "Sentiment": 0.80, "Status": "Waitlist"},
+        {"Card": "Axis Horizon", "Bank": "Axis Bank", "Type": "Travel", "Fee": "₹3,000", "Yield": "2.2%",
+         "Sentiment": 0.55, "Status": "New"},
+        {"Card": "Axis Select", "Bank": "Axis Bank", "Type": "Lifestyle", "Fee": "₹3,000", "Yield": "1.8%",
+         "Sentiment": 0.40, "Status": "Weak"},
+        {"Card": "Axis Privilege", "Bank": "Axis Bank", "Type": "Lifestyle", "Fee": "₹1,500", "Yield": "1.5%",
+         "Sentiment": 0.45, "Status": "Stable"},
+        {"Card": "Axis MyZone", "Bank": "Axis Bank", "Type": "Entry", "Fee": "₹500", "Yield": "1.0%", "Sentiment": 0.70,
+         "Status": "Mass Market"},
+        {"Card": "Axis Neo", "Bank": "Axis Bank", "Type": "Entry", "Fee": "₹250", "Yield": "0.8%", "Sentiment": 0.60,
+         "Status": "Mass Market"},
         {"Card": "Axis Ace", "Bank": "Axis Bank", "Type": "Cashback", "Fee": "₹499", "Yield": "2.0%", "Sentiment": 0.88,
          "Status": "Leader"},
         {"Card": "Flipkart Axis Bank", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹500", "Yield": "1.5%",
          "Sentiment": 0.65, "Status": "High Volume"},
         {"Card": "Airtel Axis Bank", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹500", "Yield": "10%",
          "Sentiment": 0.90, "Status": "Segment Leader"},
-        # COMPETITORS
+        {"Card": "Samsung Axis Infinite", "Bank": "Axis Bank", "Type": "Co-Brand", "Fee": "₹5,000", "Yield": "10%",
+         "Sentiment": 0.60, "Status": "Niche"},
+        {"Card": "IndianOil Axis Premium", "Bank": "Axis Bank", "Type": "Fuel", "Fee": "₹1,000", "Yield": "3.0%",
+         "Sentiment": 0.50, "Status": "Stable"},
+
+        # --- COMPETITORS (Expanded) ---
         {"Card": "HDFC Infinia Metal", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹12,500", "Yield": "3.3%",
          "Sentiment": 0.82, "Status": "Threat"},
+        {"Card": "HDFC Diners Black", "Bank": "HDFC Bank", "Type": "Super Premium", "Fee": "₹10,000", "Yield": "3.3%",
+         "Sentiment": 0.78, "Status": "Stable"},
         {"Card": "HDFC Regalia Gold", "Bank": "HDFC Bank", "Type": "Premium", "Fee": "₹2,500", "Yield": "1.8%",
          "Sentiment": 0.60, "Status": "Volume"},
+        {"Card": "HDFC Swiggy", "Bank": "HDFC Bank", "Type": "Lifestyle", "Fee": "₹500", "Yield": "10%",
+         "Sentiment": 0.75, "Status": "Rising"},
         {"Card": "SBI Cashback", "Bank": "SBI Card", "Type": "Cashback", "Fee": "₹999", "Yield": "5.0%",
          "Sentiment": 0.65, "Status": "High Threat"},
+        {"Card": "SBI Aurum", "Bank": "SBI Card", "Type": "Super Premium", "Fee": "₹10,000", "Yield": "2.5%",
+         "Sentiment": 0.55, "Status": "Niche"},
         {"Card": "ICICI Amazon Pay", "Bank": "ICICI Bank", "Type": "Shopping", "Fee": "₹0", "Yield": "5.0%",
          "Sentiment": 0.90, "Status": "Volume Leader"},
+        {"Card": "ICICI Emeralde Metal", "Bank": "ICICI Bank", "Type": "Super Premium", "Fee": "₹12,000",
+         "Yield": "3.0%", "Sentiment": 0.60, "Status": "Stable"},
         {"Card": "Amex Platinum Charge", "Bank": "American Express", "Type": "Super Premium", "Fee": "₹66,000",
          "Yield": "Variable", "Sentiment": 0.85, "Status": "Brand Leader"},
+        {"Card": "Amex Gold Charge", "Bank": "American Express", "Type": "Premium", "Fee": "₹4,500",
+         "Yield": "Variable", "Sentiment": 0.78, "Status": "Cult Fav"},
+        {"Card": "Kotak White Reserve", "Bank": "Kotak Mahindra", "Type": "Super Premium", "Fee": "₹12,500",
+         "Yield": "2.0%", "Sentiment": 0.50, "Status": "Niche"},
+        {"Card": "IDFC First Wealth", "Bank": "IDFC FIRST", "Type": "Premium", "Fee": "₹0", "Yield": "1.5%",
+         "Sentiment": 0.78, "Status": "Stable"},
+        {"Card": "IDFC First WOW", "Bank": "IDFC FIRST", "Type": "Secured", "Fee": "₹0", "Yield": "0.5%",
+         "Sentiment": 0.90, "Status": "Leader"},
+        {"Card": "IndusInd EazyDiner", "Bank": "IndusInd Bank", "Type": "Dining", "Fee": "₹1,999", "Yield": "5-10%",
+         "Sentiment": 0.85, "Status": "Segment Leader"},
+        {"Card": "RBL World Safari", "Bank": "RBL Bank", "Type": "Travel", "Fee": "₹3,000", "Yield": "0% Forex",
+         "Sentiment": 0.65, "Status": "Niche"},
+        {"Card": "Yes Bank Marquee", "Bank": "Yes Bank", "Type": "Premium", "Fee": "₹9,999", "Yield": "2.5%",
+         "Sentiment": 0.60, "Status": "Stable"},
+        {"Card": "Federal Scapia", "Bank": "Federal Bank", "Type": "Travel", "Fee": "₹0", "Yield": "2.0%",
+         "Sentiment": 0.80, "Status": "Disruptor"},
         {"Card": "OneCard Metal", "Bank": "OneCard", "Type": "Fintech", "Fee": "₹0", "Yield": "1.0%", "Sentiment": 0.75,
          "Status": "Popular"}
-    ])
-
-
-@st.cache_data
-def load_lending_offers():
-    """Module 4 Data"""
-    return pd.DataFrame([
-        # AXIS
-        {"Bank": "Axis Bank", "Product": "Insta Loan (CC)", "ROI_Min": 15.0, "ROI_Max": 18.0,
-         "Proc_Fee": "2% (Min ₹500)", "Tenure": "12-60 mo", "Type": "Loan"},
-        {"Bank": "Axis Bank", "Product": "Merchant EMI", "ROI_Min": 13.0, "ROI_Max": 15.0, "Proc_Fee": "1% (Max ₹1000)",
-         "Tenure": "3-24 mo", "Type": "EMI"},
-        # RIVALS
-        {"Bank": "HDFC Bank", "Product": "Jumbo Loan", "ROI_Min": 14.5, "ROI_Max": 17.5, "Proc_Fee": "₹999 + GST",
-         "Tenure": "12-60 mo", "Type": "Loan"},
-        {"Bank": "ICICI Bank", "Product": "Personal Loan on CC", "ROI_Min": 14.99, "ROI_Max": 16.99, "Proc_Fee": "1.5%",
-         "Tenure": "12-60 mo", "Type": "Loan"},
-        {"Bank": "SBI Card", "Product": "Encash", "ROI_Min": 14.5, "ROI_Max": 19.0, "Proc_Fee": "2%",
-         "Tenure": "12-48 mo", "Type": "Loan"}
     ])
 
 
@@ -250,77 +263,60 @@ with st.sidebar:
     st.caption("Strategic Intelligence Unit")
     st.divider()
 
+    # NAVIGATION
     module = st.radio("Navigation",
                       ["💎 Strategic Overview",
                        "📊 Module 1: Market Data",
                        "🧠 Module 2: Sentiment Engine",
-                       "📜 Module 3: Compliance Watch",
-                       "💸 Module 4: Lending Sentinel"])
+                       "📜 Module 3: Compliance Watch"])
 
     st.divider()
     if module == "💎 Strategic Overview":
-        st.info("ℹ️ Welcome to Command Center.")
+        st.info("ℹ️ Welcome to the Command Center.")
     elif module == "📜 Module 3: Compliance Watch":
-        st.info("ℹ️ Includes PDF Scraper.")
-    elif module == "💸 Module 4: Lending Sentinel":
-        st.info("ℹ️ Compare CC Loans & EMI.")
+        st.info("ℹ️ Includes Smart PDF Scraper.")
     else:
         st.success("🟢 Systems Online")
 
-# --- 4. MODULES ---
-
+# --- 4. LANDING PAGE: STRATEGIC OVERVIEW (Standard UI) ---
 if module == "💎 Strategic Overview":
     st.title("💎 Sentinel Command Center")
     st.markdown("### AI-Led Competitive Intelligence Framework")
     st.markdown("---")
 
-    # --- GEMSTONE CARDS FOR OVERVIEW ---
-    # These cards use the 'gemstone-card' CSS class defined at the top
-    # The text color automatically adapts to the theme settings
+    # Introduction
+    st.markdown("""
+    **Project Sentinel** integrates **Regulatory Truth (RBI Data)** with **Customer Reality (AI Sentiment)**.
+    """)
+    st.write("")
 
-    col1, col2 = st.columns(2)
+    # Standard Columns (No custom glassmorphism to ensure visibility)
+    col1, col2, col3 = st.columns(3)
+
     with col1:
-        st.markdown("""
-        <div class="gemstone-card">
-            <div class="gemstone-header">📊 Market Data</div>
-            <p><b>Source:</b> RBI Official Reports (Monthly)</p>
-            <p><b>Function:</b> Tracks Market Share, Net Additions, and Spend Quality (ATS).</p>
-            <p><b>Value:</b> Definitive proof of "Where we stand" vs. HDFC/SBI.</p>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div class="gemstone-card">
-            <div class="gemstone-header">📜 Compliance Watch</div>
-            <p><b>Source:</b> RBI Notifications Page (Live)</p>
-            <p><b>Function:</b> Real-time scraper for Circulars & Master Directions.</p>
-            <p><b>Value:</b> Early warning system for regulatory risk.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 📊 Market Data")
+        st.info("**Source:** RBI Official Reports")
+        st.markdown(
+            "Tracks Market Share, Net Additions, and Spend Quality (ATS). Definitive proof of 'Where we stand'.")
 
     with col2:
-        st.markdown("""
-        <div class="gemstone-card">
-            <div class="gemstone-header">🧠 Sentiment Engine</div>
-            <p><b>Source:</b> Reddit, Twitter (X), Forums</p>
-            <p><b>Function:</b> Uses GenAI (Llama-3) to detect "Rant vs. Rave" patterns.</p>
-            <p><b>Value:</b> Explains "Why we are winning/losing" before data reports it.</p>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("### 🧠 Sentiment Engine")
+        st.info("**Source:** Reddit, Twitter (X)")
+        st.markdown("Uses GenAI (Llama-3) to detect 'Rant vs. Rave' patterns. Explains 'Why we are winning/losing'.")
 
-        st.markdown("""
-        <div class="gemstone-card">
-            <div class="gemstone-header">💸 Lending Sentinel</div>
-            <p><b>Source:</b> Bank Rate Cards & T&Cs</p>
-            <p><b>Function:</b> Benchmarks "Loan on Credit Card" & Merchant EMI rates.</p>
-            <p><b>Value:</b> Critical for pricing strategy.</p>
-        </div>
-        """, unsafe_allow_html=True)
+    with col3:
+        st.markdown("### 📜 Compliance Watch")
+        st.info("**Source:** RBI Notifications")
+        st.markdown("Real-time scraper for Circulars & Master Directions. Early warning system for regulatory risk.")
 
     st.markdown("---")
-    st.subheader("⚙️ The AI Pipeline")
+
+    # AI Methodology Diagram
+    st.subheader("⚙️ Under the Hood: The AI Pipeline")
+
     graph = graphviz.Digraph()
     graph.attr(rankdir='LR', bgcolor='transparent')
+
     graph.node('A', 'Unstructured Data\n(Reddit/X)', shape='note', style='filled', fillcolor='#f0f0f0')
     graph.node('B', 'LLM Processor\n(Aspect Extraction)', shape='box', style='filled', fillcolor='#ffcccc')
     graph.node('C', 'Sentiment Scorer\n(-1.0 to +1.0)', shape='ellipse', style='filled', fillcolor='#e0e0e0')
@@ -330,8 +326,10 @@ if module == "💎 Strategic Overview":
     graph.edge('A', 'B', label=' Scrape')
     graph.edge('B', 'C', label=' Analyze')
     graph.edge('C', 'D', label=' Visualize')
+
     st.graphviz_chart(graph)
 
+# --- 5. MODULE 1: MARKET DATA ---
 elif module == "📊 Module 1: Market Data":
     st.title("📊 The Market Truth: RBI Data Analytics")
     df_rbi, source_status = get_rbi_market_data()
@@ -359,14 +357,6 @@ elif module == "📊 Module 1: Market Data":
     with c1:
         st.subheader("Market Share")
         fig1, ax1 = plt.subplots(figsize=(8, 4))
-        # Ensure plot text is visible in dark mode
-        fig1.patch.set_alpha(0)
-        ax1.patch.set_alpha(0)
-        text_color = 'white' if st.get_option("theme.base") == "dark" else 'black'
-        ax1.tick_params(colors=text_color)
-        ax1.xaxis.label.set_color(text_color);
-        ax1.yaxis.label.set_color(text_color)
-
         sns.barplot(data=df_rbi.head(6), x='Market_Share', y='Bank', palette='Blues_r', ax=ax1)
         for i, bar in enumerate(ax1.patches):
             if 'Axis' in df_rbi.head(6).iloc[i]['Bank']: bar.set_color('#8B0000')
@@ -374,14 +364,11 @@ elif module == "📊 Module 1: Market Data":
     with c2:
         st.subheader("Spend Quality (ATS)")
         fig2, ax2 = plt.subplots(figsize=(6, 4))
-        fig2.patch.set_alpha(0);
-        ax2.patch.set_alpha(0)
-        ax2.tick_params(colors=text_color);
-        ax2.xaxis.label.set_color(text_color)
         sns.barplot(data=df_rbi.sort_values('Spend_Per_Card', ascending=False).head(8), x='Spend_Per_Card', y='Bank',
                     palette='viridis', ax=ax2)
         st.pyplot(fig2)
 
+# --- 6. MODULE 2: SENTIMENT ENGINE ---
 elif module == "🧠 Module 2: Sentiment Engine":
     st.title("🧠 The Customer Pulse: AI Sentiment Engine")
     df_cards = load_full_market_portfolio()
@@ -401,17 +388,16 @@ elif module == "🧠 Module 2: Sentiment Engine":
         a_dat = df_cards[df_cards['Card'] == axis_c].iloc[0]
         r_dat = df_cards[df_cards['Card'] == rival_c].iloc[0]
 
-        # Use the Adaptive Gemstone Card Class
         st.markdown(f"""
         <div style="display: flex; gap: 20px; margin-top: 10px;">
-            <div class="gemstone-card" style="flex: 1;">
+            <div style="flex: 1; padding: 15px; border: 2px solid #8B0000; border-radius: 8px; background: #fff5f5;">
                 <h3 style="color:#8B0000; margin:0;">{a_dat['Card']}</h3>
                 <p><b>Fee:</b> {a_dat['Fee']} | <b>Yield:</b> {a_dat['Yield']}</p>
                 <div style="font-size: 24px; font-weight: bold;">{a_dat['Sentiment']}</div>
                 <p>Status: {a_dat['Status']}</p>
             </div>
-            <div class="gemstone-card" style="flex: 1;">
-                <h3 style="margin:0;">{r_dat['Card']}</h3>
+            <div style="flex: 1; padding: 15px; border: 1px solid #ccc; border-radius: 8px; background: #f9f9f9;">
+                <h3 style="color:#333; margin:0;">{r_dat['Card']}</h3>
                 <p><b>Fee:</b> {r_dat['Fee']} | <b>Yield:</b> {r_dat['Yield']}</p>
                 <div style="font-size: 24px; font-weight: bold;">{r_dat['Sentiment']}</div>
                 <p>Status: {r_dat['Status']}</p>
@@ -421,17 +407,17 @@ elif module == "🧠 Module 2: Sentiment Engine":
 
     with tab2:
         if st.button("🚀 Run AI Extraction"):
-            time.sleep(1)
-            st.bar_chart(filtered_df.set_index('Card')['Sentiment'])
+            with st.spinner("Connecting to Social Nodes..."):
+                time.sleep(2)
+                st.warning("⚠️ **Alert:** Complaints rising on 'Airtel Axis' utility capping.")
+                st.bar_chart(filtered_df.set_index('Card')['Sentiment'])
 
     with tab3:
         st.dataframe(filtered_df, use_container_width=True)
 
+# --- 7. MODULE 3: COMPLIANCE WATCH ---
 elif module == "📜 Module 3: Compliance Watch":
     st.title("📜 Compliance Watch: RBI Circulars")
-    if 'pdf_data' not in st.session_state: st.session_state['pdf_data'] = None
-    if 'pdf_name' not in st.session_state: st.session_state['pdf_name'] = ""
-
     if st.button("🔄 Refresh"): st.cache_data.clear()
 
     with st.spinner("Fetching latest circulars..."):
@@ -453,81 +439,10 @@ elif module == "📜 Module 3: Compliance Watch":
                         st.session_state['pdf_data'] = pdf_bytes
                         st.session_state['pdf_name'] = "RBI_Circular.pdf"
                         st.success("PDF Ready!")
-                        time.sleep(0.5);
-                        st.rerun()
                     else:
                         st.error(f"Failed: {msg}")
         with c2:
-            if st.session_state['pdf_data']:
+            if 'pdf_data' in st.session_state:
                 st.download_button("⬇️ Download PDF", st.session_state['pdf_data'], st.session_state['pdf_name'])
     else:
         st.info("No recent circulars.")
-
-elif module == "💸 Module 4: Lending Sentinel":
-    st.title("💸 Lending Sentinel: Instant Loans & EMI")
-    df_loan = load_lending_offers()
-
-    tab1, tab2, tab3 = st.tabs(["⚖️ Rate Comparator", "🧮 EMI Calculator", "📋 Market Scanner"])
-
-    with tab1:
-        col_bench, col_comp = st.columns(2)
-        with col_bench:
-            axis_prod = st.selectbox("Axis Product", df_loan[df_loan['Bank'] == 'Axis Bank']['Product'].unique())
-        with col_comp:
-            rival_bank = st.selectbox("Competitor Bank", df_loan[df_loan['Bank'] != 'Axis Bank']['Bank'].unique())
-            rival_prod_opts = df_loan[df_loan['Bank'] == rival_bank]['Product'].unique()
-            rival_prod = st.selectbox("Competitor Product", rival_prod_opts if len(rival_prod_opts) > 0 else ["N/A"])
-
-        if rival_prod != "N/A":
-            a_l = df_loan[(df_loan['Bank'] == 'Axis Bank') & (df_loan['Product'] == axis_prod)].iloc[0]
-            r_l = df_loan[(df_loan['Bank'] == rival_bank) & (df_loan['Product'] == rival_prod)].iloc[0]
-
-            st.markdown(f"""
-            <div style="display: flex; gap: 20px; margin-top: 15px;">
-                <div class="gemstone-card" style="flex: 1;">
-                    <div class="gemstone-header">{a_l['Bank']} - {a_l['Product']}</div>
-                    <h1>{a_l['ROI_Min']}% <small style="font-size:16px;">to {a_l['ROI_Max']}%</small></h1>
-                    <p><b>Proc Fee:</b> {a_l['Proc_Fee']}</p>
-                </div>
-                <div class="gemstone-card" style="flex: 1;">
-                    <div class="gemstone-header" style="color:var(--text-color)!important;">{r_l['Bank']} - {r_l['Product']}</div>
-                    <h1>{r_l['ROI_Min']}% <small style="font-size:16px;">to {r_l['ROI_Max']}%</small></h1>
-                    <p><b>Proc Fee:</b> {r_l['Proc_Fee']}</p>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    with tab2:
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            loan_amt = st.number_input("Loan Amount (₹)", 50000, 1000000, 100000, step=10000)
-        with c2:
-            tenure = st.slider("Tenure (Months)", 6, 60, 12)
-        with c3:
-            axis_rate = st.number_input("Axis Rate (%)", 10.0, 24.0, 15.0)
-            rival_rate = st.number_input("Rival Rate (%)", 10.0, 24.0, 14.5)
-
-
-        def calc_emi(p, r, n):
-            r_mon = r / (12 * 100)
-            return p * r_mon * ((1 + r_mon) ** n) / (((1 + r_mon) ** n) - 1)
-
-
-        emi_axis = calc_emi(loan_amt, axis_rate, tenure)
-        emi_rival = calc_emi(loan_amt, rival_rate, tenure)
-
-        st.divider()
-        k1, k2, k3 = st.columns(3)
-        with k1:
-            st.metric("Axis Monthly EMI", f"₹{emi_axis:,.0f}")
-        with k2:
-            st.metric("Rival Monthly EMI", f"₹{emi_rival:,.0f}", delta=f"₹{emi_axis - emi_rival:,.0f} diff")
-        with k3:
-            savings = (emi_axis * tenure) - (emi_rival * tenure)
-            if savings < 0:
-                st.metric("Total Savings", f"₹{abs(savings):,.0f}")
-            else:
-                st.metric("Extra Cost", f"₹{savings:,.0f}")
-
-    with tab3:
-        st.dataframe(df_loan, use_container_width=True)
