@@ -11,66 +11,61 @@ import graphviz
 import numpy as np
 
 # --- 1. APP CONFIGURATION ---
-st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="🛡️")
+st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="💎")
 
-# Disable SSL warnings for RBI's legacy certificates
+# Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- THEME-ADAPTIVE CSS ---
+# --- THEME-ADAPTIVE "GEMSTONE" UI ---
 st.markdown("""
     <style>
-    /* UNIVERSAL ADAPTIVE THEME 
-       Uses var(--...) to automatically switch colors based on user settings 
-    */
-
-    /* 1. Metrics Box - Adaptive Background with Burgundy Accent */
-    div[data-testid="metric-container"] {
-        border-left: 5px solid #8B0000;
-        background-color: var(--secondary-background-color); /* Light Grey (Light Mode) / Dark Grey (Dark Mode) */
-        padding: 10px;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        border-radius: 5px;
+    /* 1. ADAPTIVE CARD DESIGN (The "Gemstone" Look that works in Dark Mode) */
+    .gemstone-card {
+        background-color: var(--secondary-background-color); /* Auto-adapts to Light/Dark */
+        border: 1px solid rgba(139, 0, 0, 0.2); /* Subtle Burgundy Border */
+        border-left: 5px solid #8B0000; /* Burgundy Accent */
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        transition: transform 0.2s;
+    }
+    .gemstone-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
     }
 
-    /* 2. Buttons - Burgundy (High Contrast in both modes) */
+    /* 2. TEXT ADAPTATION */
+    h1, h2, h3, h4, strong {
+        color: var(--text-color) !important; /* Auto-adapts */
+    }
+    .gemstone-header {
+        color: #8B0000 !important; /* Axis Burgundy for Headers */
+        font-weight: bold;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+    }
+
+    /* 3. BUTTONS */
     .stButton > button {
         background-color: #8B0000; 
         color: white;
-        border-radius: 4px;
-        width: 100%;
+        border-radius: 6px;
         font-weight: bold;
         border: none;
     }
     .stButton > button:hover { background-color: #660000; color: white; }
-    .stButton > button:active { color: white; }
 
-    /* 3. Tabs - Adaptive Text with Burgundy Underline */
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
-    .stTabs [aria-selected="true"] { 
-        border-bottom: 2px solid #8B0000;
-        color: #8B0000; /* Text color for active tab */
-    }
+    /* 4. TABS */
+    .stTabs [aria-selected="true"] { border-bottom: 2px solid #8B0000; color: #8B0000; }
 
-    /* 4. Links - Always Burgundy */
+    /* 5. LINKS */
     a { color: #8B0000 !important; text-decoration: none; font-weight: bold; }
-    a:hover { text-decoration: underline; }
-
-    /* 5. Headings & Text - Let Streamlit handle standard text */
-    h1, h2, h3 { font-weight: 700; }
-
-    /* 6. Custom Cards (for Overview) - Adaptive */
-    .adaptive-card {
-        background-color: var(--secondary-background-color);
-        padding: 20px;
-        border-radius: 10px;
-        border: 1px solid rgba(128, 128, 128, 0.2);
-        margin-bottom: 20px;
-    }
     </style>
     """, unsafe_allow_html=True)
 
 
-# --- 2. DATA PIPELINES ---
+# --- 2. DATA LOADERS ---
 
 @st.cache_data(ttl=3600)
 def get_rbi_market_data():
@@ -279,38 +274,46 @@ if module == "💎 Strategic Overview":
     st.markdown("### AI-Led Competitive Intelligence Framework")
     st.markdown("---")
 
-    # Adaptive Cards for Overview
-    col1, col2, col3, col4 = st.columns(4)
+    # --- GEMSTONE CARDS FOR OVERVIEW ---
+    # These cards use the 'gemstone-card' CSS class defined at the top
+    # The text color automatically adapts to the theme settings
+
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown("""
-        <div class="adaptive-card">
-            <h4>📊 Market Data</h4>
-            <p><b>Source:</b> RBI Official Reports</p>
-            <small>Tracks Market Share & Net Additions.</small>
+        <div class="gemstone-card">
+            <div class="gemstone-header">📊 Market Data</div>
+            <p><b>Source:</b> RBI Official Reports (Monthly)</p>
+            <p><b>Function:</b> Tracks Market Share, Net Additions, and Spend Quality (ATS).</p>
+            <p><b>Value:</b> Definitive proof of "Where we stand" vs. HDFC/SBI.</p>
         </div>
         """, unsafe_allow_html=True)
+
+        st.markdown("""
+        <div class="gemstone-card">
+            <div class="gemstone-header">📜 Compliance Watch</div>
+            <p><b>Source:</b> RBI Notifications Page (Live)</p>
+            <p><b>Function:</b> Real-time scraper for Circulars & Master Directions.</p>
+            <p><b>Value:</b> Early warning system for regulatory risk.</p>
+        </div>
+        """, unsafe_allow_html=True)
+
     with col2:
         st.markdown("""
-        <div class="adaptive-card">
-            <h4>🧠 Sentiment</h4>
-            <p><b>Source:</b> Reddit, Twitter (X)</p>
-            <small>GenAI analysis of 'Rant vs Rave'.</small>
+        <div class="gemstone-card">
+            <div class="gemstone-header">🧠 Sentiment Engine</div>
+            <p><b>Source:</b> Reddit, Twitter (X), Forums</p>
+            <p><b>Function:</b> Uses GenAI (Llama-3) to detect "Rant vs. Rave" patterns.</p>
+            <p><b>Value:</b> Explains "Why we are winning/losing" before data reports it.</p>
         </div>
         """, unsafe_allow_html=True)
-    with col3:
+
         st.markdown("""
-        <div class="adaptive-card">
-            <h4>📜 Compliance</h4>
-            <p><b>Source:</b> RBI Notifications</p>
-            <small>Real-time Circular & PDF Scraper.</small>
-        </div>
-        """, unsafe_allow_html=True)
-    with col4:
-        st.markdown("""
-        <div class="adaptive-card">
-            <h4>💸 Lending</h4>
-            <p><b>Source:</b> Bank Rate Cards</p>
-            <small>Insta-Loan & EMI Rate Benchmarking.</small>
+        <div class="gemstone-card">
+            <div class="gemstone-header">💸 Lending Sentinel</div>
+            <p><b>Source:</b> Bank Rate Cards & T&Cs</p>
+            <p><b>Function:</b> Benchmarks "Loan on Credit Card" & Merchant EMI rates.</p>
+            <p><b>Value:</b> Critical for pricing strategy.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -318,11 +321,15 @@ if module == "💎 Strategic Overview":
     st.subheader("⚙️ The AI Pipeline")
     graph = graphviz.Digraph()
     graph.attr(rankdir='LR', bgcolor='transparent')
-    graph.node('A', 'Unstructured Data', shape='note')
-    graph.node('B', 'LLM Processor', shape='box')
-    graph.node('C', 'Dashboard', shape='folder')
-    graph.edge('A', 'B', label=' Scrape');
-    graph.edge('B', 'C', label=' Insight')
+    graph.node('A', 'Unstructured Data\n(Reddit/X)', shape='note', style='filled', fillcolor='#f0f0f0')
+    graph.node('B', 'LLM Processor\n(Aspect Extraction)', shape='box', style='filled', fillcolor='#ffcccc')
+    graph.node('C', 'Sentiment Scorer\n(-1.0 to +1.0)', shape='ellipse', style='filled', fillcolor='#e0e0e0')
+    graph.node('D', 'Strategic Insight\n(Dashboard)', shape='folder', style='filled', fillcolor='#8B0000',
+               fontcolor='white')
+
+    graph.edge('A', 'B', label=' Scrape')
+    graph.edge('B', 'C', label=' Analyze')
+    graph.edge('C', 'D', label=' Visualize')
     st.graphviz_chart(graph)
 
 elif module == "📊 Module 1: Market Data":
@@ -352,15 +359,13 @@ elif module == "📊 Module 1: Market Data":
     with c1:
         st.subheader("Market Share")
         fig1, ax1 = plt.subplots(figsize=(8, 4))
-        # Use transparent background for plots so they look good in dark mode
+        # Ensure plot text is visible in dark mode
         fig1.patch.set_alpha(0)
         ax1.patch.set_alpha(0)
-        # Adapt text color
         text_color = 'white' if st.get_option("theme.base") == "dark" else 'black'
+        ax1.tick_params(colors=text_color)
         ax1.xaxis.label.set_color(text_color);
         ax1.yaxis.label.set_color(text_color)
-        ax1.tick_params(axis='x', colors=text_color);
-        ax1.tick_params(axis='y', colors=text_color)
 
         sns.barplot(data=df_rbi.head(6), x='Market_Share', y='Bank', palette='Blues_r', ax=ax1)
         for i, bar in enumerate(ax1.patches):
@@ -396,16 +401,16 @@ elif module == "🧠 Module 2: Sentiment Engine":
         a_dat = df_cards[df_cards['Card'] == axis_c].iloc[0]
         r_dat = df_cards[df_cards['Card'] == rival_c].iloc[0]
 
-        # Adaptive Cards
+        # Use the Adaptive Gemstone Card Class
         st.markdown(f"""
         <div style="display: flex; gap: 20px; margin-top: 10px;">
-            <div class="adaptive-card" style="flex: 1; border-left: 5px solid #8B0000;">
+            <div class="gemstone-card" style="flex: 1;">
                 <h3 style="color:#8B0000; margin:0;">{a_dat['Card']}</h3>
                 <p><b>Fee:</b> {a_dat['Fee']} | <b>Yield:</b> {a_dat['Yield']}</p>
                 <div style="font-size: 24px; font-weight: bold;">{a_dat['Sentiment']}</div>
                 <p>Status: {a_dat['Status']}</p>
             </div>
-            <div class="adaptive-card" style="flex: 1;">
+            <div class="gemstone-card" style="flex: 1;">
                 <h3 style="margin:0;">{r_dat['Card']}</h3>
                 <p><b>Fee:</b> {r_dat['Fee']} | <b>Yield:</b> {r_dat['Yield']}</p>
                 <div style="font-size: 24px; font-weight: bold;">{r_dat['Sentiment']}</div>
@@ -479,13 +484,13 @@ elif module == "💸 Module 4: Lending Sentinel":
 
             st.markdown(f"""
             <div style="display: flex; gap: 20px; margin-top: 15px;">
-                <div class="adaptive-card" style="flex: 1; border-left: 5px solid #8B0000;">
-                    <h4 style="color:#8B0000; margin:0;">{a_l['Bank']} - {a_l['Product']}</h4>
+                <div class="gemstone-card" style="flex: 1;">
+                    <div class="gemstone-header">{a_l['Bank']} - {a_l['Product']}</div>
                     <h1>{a_l['ROI_Min']}% <small style="font-size:16px;">to {a_l['ROI_Max']}%</small></h1>
                     <p><b>Proc Fee:</b> {a_l['Proc_Fee']}</p>
                 </div>
-                <div class="adaptive-card" style="flex: 1;">
-                    <h4 style="margin:0;">{r_l['Bank']} - {r_l['Product']}</h4>
+                <div class="gemstone-card" style="flex: 1;">
+                    <div class="gemstone-header" style="color:var(--text-color)!important;">{r_l['Bank']} - {r_l['Product']}</div>
                     <h1>{r_l['ROI_Min']}% <small style="font-size:16px;">to {r_l['ROI_Max']}%</small></h1>
                     <p><b>Proc Fee:</b> {r_l['Proc_Fee']}</p>
                 </div>
