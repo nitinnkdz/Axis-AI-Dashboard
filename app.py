@@ -6,35 +6,26 @@ import urllib3
 import graphviz
 import plotly.express as px
 import numpy as np
+import matplotlib.pyplot as plt  # <--- FIXED: Missing import added
+import seaborn as sns
 from datetime import datetime
-import time
-# NEW: Import dotenv to load the .env file
 from dotenv import load_dotenv
 
 # --- 1. APP CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="💎")
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# --- 2. SECURE API HANDLING (ENV VARS) ---
-# Load environment variables from .env file
+# --- 2. SECURE API HANDLING ---
 load_dotenv()
 
 
 def get_api_key():
-    """
-    Fetches API key securely from Environment Variables.
-    Works locally via .env and in Cloud via System Secrets.
-    """
-    # Try getting it from the system environment (The "Fix" you requested)
     api_key = os.getenv("GROQ_API")
-
-    # Fallback: Check Streamlit secrets (useful if deploying to Streamlit Cloud)
     if not api_key:
         try:
             api_key = st.secrets["GROQ_API"]
         except:
             pass
-
     return api_key
 
 
@@ -52,6 +43,7 @@ st.markdown("""
         padding: 20px;
         border-radius: 10px;
         margin-bottom: 20px;
+        height: 100%;
         transition: transform 0.2s;
     }
     .gemstone-card:hover { transform: translateY(-3px); }
@@ -72,6 +64,10 @@ st.markdown("""
     .persona-student { border-left: 4px solid #1976d2; }
     .persona-hni { border-left: 4px solid #388e3c; }
 
+    .swot-box {
+        padding: 15px; border-radius: 8px; margin-bottom: 10px;
+        border: 1px solid rgba(128,128,128,0.2); background-color: var(--secondary-background-color);
+    }
     .stPlotlyChart { background-color: transparent !important; }
 
     .stButton > button {
@@ -79,13 +75,19 @@ st.markdown("""
         font-weight: 600; border: none; height: 45px; width: 100%;
     }
     .stButton > button:hover { background-color: #600000; }
+
+    div[data-testid="metric-container"] {
+        background-color: var(--secondary-background-color);
+        border-left: 5px solid #8B0000;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        padding: 10px; border-radius: 5px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
 
-# --- 4. GENAI ENGINE (Llama 3) ---
+# --- 4. GENAI ENGINE ---
 def query_llama_model(prompt, system_role="You are a helpful banking analyst."):
-    """Live call to Groq API"""
     if not GROQ_API_KEY:
         return "⚠️ Simulation Mode: API Key missing. Check .env file."
 
@@ -93,7 +95,7 @@ def query_llama_model(prompt, system_role="You are a helpful banking analyst."):
     headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
 
     payload = {
-        "model": "llama3-8b-8192",
+        "model": "llama-3.1-8b-instant",
         "messages": [
             {"role": "system", "content": system_role},
             {"role": "user", "content": prompt}
@@ -110,7 +112,6 @@ def query_llama_model(prompt, system_role="You are a helpful banking analyst."):
 
 
 # --- 5. DATA LOADERS ---
-
 @st.cache_data
 def load_full_card_universe():
     cards = []
@@ -142,7 +143,6 @@ def load_full_card_universe():
     for c in comps: cards.append(
         {"Card": c[0], "Bank": c[1], "Type": c[2], "Sentiment": c[3], "Status": c[4], "Market_Dominance": c[5],
          "Growth_Potential": c[6]})
-
     return pd.DataFrame(cards)
 
 
@@ -313,7 +313,6 @@ elif module == "🎭 Module 7: Persona War Room":
                                                                    "You are a Gen Z student. Focus on discounts.")
             st.markdown(f'<div class="chat-bubble persona-student">"{r3}"</div>', unsafe_allow_html=True)
 
-# (Modules 1, 3, 4, 5, 6 included here via standard data loaders defined above)
 elif module == "📊 Module 1: Market Data":
     st.title("📊 The Market Truth: RBI Data Analytics")
     df_rbi = get_rbi_market_data()
@@ -355,7 +354,7 @@ elif module == "📜 Module 3: Compliance Watch":
     if 'pdf_data' not in st.session_state: st.session_state['pdf_data'] = None
     if st.button("🔄 Refresh"): st.cache_data.clear()
     df_news = get_rbi_circulars()
-    st.dataframe(df_news, use_container_width=True)
+    st.dataframe(df_news, width="stretch")  # <--- FIXED: Deprecation
     st.divider()
     st.subheader("📥 Smart PDF Downloader")
     c1, c2 = st.columns([1, 3])
@@ -372,7 +371,7 @@ elif module == "💸 Module 4: Lending Sentinel":
     df_loan = load_lending_offers()
     tab1, tab2 = st.tabs(["⚖️ Comparator", "🧮 EMI Calculator"])
     with tab1:
-        st.dataframe(df_loan, use_container_width=True)
+        st.dataframe(df_loan, width="stretch")  # <--- FIXED: Deprecation
     with tab2:
         amount = st.number_input("Loan Amount", 50000, 1000000, 100000)
         rate = st.slider("Interest Rate (%)", 9.0, 20.0, 10.5)
@@ -403,8 +402,10 @@ elif module == "🤖 Module 5: AI Strategy Lab":
 elif module == "🌍 Module 6: Geospatial Intel":
     st.title("🌍 Geospatial Intelligence")
     geo_data = get_geo_data_from_csv()
-    fig = px.scatter_mapbox(geo_data, lat="Lat", lon="Lon", hover_name="City", size="Revenue_Cr", color="Dominance",
-                            color_discrete_map={"Strong": "green", "Moderate": "orange", "Weak": "red"}, zoom=3.5,
-                            height=500)
-    fig.update_layout(mapbox_style="open-street-map", margin={"r": 0, "t": 0, "l": 0, "b": 0})
-    st.plotly_chart(fig, use_container_width=True)
+    fig = px.scatter_map(geo_data, lat="Lat", lon="Lon", hover_name="City", size="Revenue_Cr", color="Dominance",
+                         # <--- FIXED: Updated from scatter_mapbox
+                         color_discrete_map={"Strong": "green", "Moderate": "orange", "Weak": "red"}, zoom=3.5,
+                         height=500)
+    fig.update_layout(map_style="open-street-map",
+                      margin={"r": 0, "t": 0, "l": 0, "b": 0})  # <--- FIXED: Updated layout key
+    st.plotly_chart(fig, width="stretch")  # <--- FIXED: Deprecation
