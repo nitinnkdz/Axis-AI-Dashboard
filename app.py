@@ -112,54 +112,33 @@ def query_llama_model(prompt, system_role="You are a helpful banking analyst."):
 
 
 # --- 5. DATA LOADERS ---
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_full_card_universe():
-    cards = []
-    # AXIS PORTFOLIO
-    axis = [
-        ("Axis Burgundy Private", "Invite Only", 0.95, "Elite", 30, 85),
-        ("Axis Reserve", "Super Premium", 0.65, "Review", 60, 45),
-        ("Axis Magnus", "Super Premium", 0.35, "Devalued", 75, 30),
-        ("Axis Atlas", "Travel", 0.85, "Leader", 50, 90),
-        ("Axis Ace", "Cashback", 0.88, "Leader", 90, 85),
-        ("Flipkart Axis", "Co-Brand", 0.65, "High Volume", 95, 50),
-        ("Airtel Axis", "Co-Brand", 0.90, "Segment Leader", 65, 92),
-        ("Axis MyZone", "Entry", 0.70, "Mass Market", 85, 40),
-        ("Axis Neo", "Entry", 0.60, "Mass Market", 80, 30)
-    ]
-    for c in axis: cards.append(
-        {"Card": c[0], "Bank": "Axis Bank", "Type": c[1], "Sentiment": c[2], "Status": c[3], "Market_Dominance": c[4],
-         "Growth_Potential": c[5]})
-
-    # COMPETITORS
-    comps = [
-        ("HDFC Infinia Metal", "HDFC Bank", "Super Premium", 0.92, "Market Leader", 95, 60),
-        ("HDFC Regalia Gold", "HDFC Bank", "Premium", 0.70, "Volume", 90, 50),
-        ("SBI Cashback", "SBI Card", "Cashback", 0.88, "Threat", 70, 95),
-        ("ICICI Amazon Pay", "ICICI Bank", "Shopping", 0.95, "Volume Leader", 99, 50),
-        ("Amex Platinum Charge", "American Express", "Super Premium", 0.90, "Brand Leader", 40, 70),
-        ("OneCard Metal", "OneCard", "Fintech", 0.78, "Popular", 50, 75)
-    ]
-    for c in comps: cards.append(
-        {"Card": c[0], "Bank": c[1], "Type": c[2], "Sentiment": c[3], "Status": c[4], "Market_Dominance": c[5],
-         "Growth_Potential": c[6]})
-    return pd.DataFrame(cards)
+    try:
+        import sqlite3
+        conn = sqlite3.connect('sentinel_data.db')
+        df = pd.read_sql("SELECT * FROM card_universe", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        return pd.DataFrame()
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def get_rbi_market_data():
-    data = [
-        {"Bank": "HDFC Bank", "Active_Cards": 22350000, "Spend_Per_Card": 21500, "Market_Share": 22.3},
-        {"Bank": "SBI Card", "Active_Cards": 19100000, "Spend_Per_Card": 16200, "Market_Share": 19.0},
-        {"Bank": "ICICI Bank", "Active_Cards": 16800000, "Spend_Per_Card": 17800, "Market_Share": 16.2},
-        {"Bank": "Axis Bank", "Active_Cards": 14200000, "Spend_Per_Card": 18500, "Market_Share": 13.6},
-        {"Bank": "Kotak Mahindra", "Active_Cards": 6100000, "Spend_Per_Card": 14100, "Market_Share": 4.0},
-        {"Bank": "American Express", "Active_Cards": 1400000, "Spend_Per_Card": 42000, "Market_Share": 1.5}
-    ]
-    return pd.DataFrame(data)
+    try:
+        import sqlite3
+        conn = sqlite3.connect('sentinel_data.db')
+        df = pd.read_sql("SELECT * FROM rbi_market_data", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        return pd.DataFrame()
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def get_geo_data_from_csv():
     CITY_COORDS = {
         "Mumbai": [19.0760, 72.8777], "New Delhi": [28.6139, 77.2090], "Bengaluru": [12.9716, 77.5946],
@@ -187,23 +166,111 @@ def get_geo_data_from_csv():
         })
 
 
-@st.cache_data
+@st.cache_data(ttl=60)
 def load_lending_offers():
-    return pd.DataFrame([
-        {"Bank": "Axis Bank", "Product": "Insta Loan (PL)", "ROI_Min": 9.99, "ROI_Max": 18.0, "Proc_Fee": "2%"},
-        {"Bank": "HDFC Bank", "Product": "Jumbo Loan", "ROI_Min": 10.80, "ROI_Max": 21.0, "Proc_Fee": "₹999"},
-        {"Bank": "ICICI Bank", "Product": "PL on Card", "ROI_Min": 10.60, "ROI_Max": 16.99, "Proc_Fee": "1.5%"}
-    ])
+    try:
+        import sqlite3
+        conn = sqlite3.connect('sentinel_data.db')
+        df = pd.read_sql("SELECT * FROM lending_offers", conn)
+        conn.close()
+        return df
+    except Exception as e:
+        st.error(f"Database error: {e}")
+        return pd.DataFrame()
 
 
-@st.cache_data
+from bs4 import BeautifulSoup
+
+@st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_rbi_circulars():
-    return pd.DataFrame([
-        {"Date": "Jan 04, 2026", "Title": "Master Direction – Credit Card Directions (Updated)",
-         "Category": "Master Direction", "Link": "#"},
-        {"Date": "Dec 15, 2025", "Title": "Fair Practices Code for Lenders - Unsecured Portfolio",
-         "Category": "Guideline", "Link": "#"}
-    ])
+    url = "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx"
+    try:
+        # Using a standard user agent to avoid being blocked
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Find the main content table (this is specific to RBI's current layout)
+        circulars = []
+        
+        # Searching for the typical structure: a table with class 'tablebg'
+        table = soup.find('table', {'class': 'tablebg'})
+        if table:
+            rows = table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) >= 2:
+                    date_text = cols[0].text.strip()
+                    # Skip header rows or malformed dates
+                    if "Date" in date_text or not date_text:
+                        continue
+                        
+                    title_elem = cols[1].find('a')
+                    if title_elem:
+                        title = title_elem.text.strip()
+                        href = title_elem.get('href', '')
+                        if href.startswith('http'):
+                            link = href
+                        else:
+                            link = "https://rbi.org.in/Scripts/" + href
+                            
+                        circulars.append({
+                            "Date": date_text,
+                            "Title": title,
+                            "Category": "Press Release", # Generalizing category
+                            "Link": link
+                        })
+                if len(circulars) >= 10: # Only get the top 10 recent
+                    break
+                    
+        # Fallback if the table structure changed but we can find links
+        if not circulars:
+            links = soup.select('div#example-min a.link2')
+            if not links:
+               # Alternative selector commonly used by RBI
+               links = soup.select('table.tablebg td a')
+               
+            for item in links[:10]:
+                 title = item.text.strip()
+                 if title:
+                     link = item.get('href', '')
+                     if not link.startswith('http'):
+                         link = f"https://rbi.org.in/Scripts/{link}"
+                     
+                     # Extracting date from text if possible, else just use today
+                     date_str = datetime.now().strftime("%b %d, %Y")
+                     # Often date is in the parent tr's first td
+                     parent_tr = item.find_parent('tr')
+                     if parent_tr:
+                         tds = parent_tr.find_all('td')
+                         if tds and tds[0] != item.parent:
+                             potential_date = tds[0].text.strip()
+                             if len(potential_date) < 15: # basic check if it looks like a short date string
+                                 date_str = potential_date
+                                 
+                     circulars.append({
+                         "Date": date_str,
+                         "Title": title,
+                         "Category": "Update",
+                         "Link": link
+                     })
+
+        if not circulars: # If scraper totally fails to find elements
+            raise ValueError("Could not parse RBI page structure")
+            
+        return pd.DataFrame(circulars)
+        
+    except Exception as e:
+        # Fallback to mock data so the app doesn't crash completely if RBI is down
+        st.warning(f"Failed to fetch live RBI data: {str(e)}. Showing fallback data.")
+        return pd.DataFrame([
+            {"Date": "Jan 04, 2026", "Title": "Master Direction – Credit Card Directions (Updated) (Mock)",
+             "Category": "Master Direction", "Link": "#"},
+            {"Date": "Dec 15, 2025", "Title": "Fair Practices Code for Lenders - Unsecured Portfolio (Mock)",
+             "Category": "Guideline", "Link": "#"}
+        ])
 
 
 def generate_ai_swot(card_name):
@@ -214,6 +281,26 @@ def generate_ai_swot(card_name):
 
 def download_pdf_from_rbi(link): return b"PDF_CONTENT", "Success"
 
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_credit_card_news():
+    import xml.etree.ElementTree as ET
+    url = "https://news.google.com/rss/search?q=indian+credit+cards&hl=en-IN&gl=IN&ceid=IN:en"
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        root = ET.fromstring(response.content)
+        news_items = []
+        for item in root.findall('.//item'):
+            title = item.find('title').text if item.find('title') is not None else "No Title"
+            link = item.find('link').text if item.find('link') is not None else "#"
+            pub_date = item.find('pubDate').text if item.find('pubDate') is not None else "Unknown Date"
+            news_items.append({"Title": title, "Link": link, "Date": pub_date})
+            if len(news_items) >= 60: # Fetching a bit more than 50 just in case
+                break
+        return news_items
+    except Exception as e:
+        st.error(f"Failed to fetch news: {e}")
+        return []
 
 # --- 6. SIDEBAR NAVIGATION ---
 with st.sidebar:
@@ -232,7 +319,8 @@ with st.sidebar:
                        "📜 Module 3: Compliance Watch",
                        "💸 Module 4: Lending Sentinel",
                        "🤖 Module 5: AI Strategy Lab",
-                       "🌍 Module 6: Geospatial Intel"])
+                       "🌍 Module 6: Geospatial Intel",
+                       "📰 Module 8: Credit Card News"])
 
     st.divider()
     if GROQ_API_KEY:
@@ -407,5 +495,85 @@ elif module == "🌍 Module 6: Geospatial Intel":
                          color_discrete_map={"Strong": "green", "Moderate": "orange", "Weak": "red"}, zoom=3.5,
                          height=500)
     fig.update_layout(map_style="open-street-map",
-                      margin={"r": 0, "t": 0, "l": 0, "b": 0})  # <--- FIXED: Updated layout key
-    st.plotly_chart(fig, width="stretch")  # <--- FIXED: Deprecation
+                      margin={"r": 0, "t": 0, "l": 0, "b": 0})
+    st.plotly_chart(fig, width="stretch")
+
+elif module == "📰 Module 8: Credit Card News":
+    st.title("📰 Live News: Indian Credit Card Market")
+    st.markdown("Real-time feed aggregating the latest news regarding credit cards in India.")
+    
+    news_data = get_credit_card_news()
+    
+    if not news_data:
+        st.warning("No news fetched. Please check your internet connection or try again later.")
+    else:
+        # Define CSS and HTML for the news grid
+        full_html = """
+        <style>
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 10px 0;
+            font-family: sans-serif;
+        }
+        .news-tile {
+            background-color: #1e1e1e;
+            border: 1px solid rgba(128, 128, 128, 0.2);
+            border-bottom: 4px solid #8B0000;
+            border-radius: 8px;
+            padding: 15px;
+            height: 200px; /* Square effect */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .news-tile:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.4);
+        }
+        .news-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #ffffff;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 4; /* Limit to 4 lines */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-decoration: none;
+        }
+        .news-date {
+            font-size: 0.75rem;
+            color: #aaaaaa;
+            margin-top: 10px;
+        }
+        .news-link {
+            text-decoration: none;
+        }
+        .news-link:hover .news-title {
+            color: #d32f2f;
+        }
+        </style>
+        <div class="news-grid">
+        """
+        
+        for item in news_data:
+            full_html += f"""
+            <a href="{item['Link']}" target="_blank" class="news-link">
+                <div class="news-tile">
+                    <div class="news-title">{item['Title']}</div>
+                    <div class="news-date">{item['Date']}</div>
+                </div>
+            </a>
+            """
+        full_html += '</div>'
+        
+        st.markdown(f"**Showing top {len(news_data)} recent articles.**")
+        
+        import streamlit.components.v1 as components
+        # Calculate dynamic height based on items
+        rows = (len(news_data) // 4) + 1  # Approximate 4 cols per row
+        components.html(full_html, height=rows * 230, scrolling=False)
