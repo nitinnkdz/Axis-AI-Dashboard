@@ -5,11 +5,11 @@ import os
 import urllib3
 import graphviz
 import plotly.express as px
+import plotly.graph_objects as go
 import numpy as np
-import matplotlib.pyplot as plt  # <--- FIXED: Missing import added
-import seaborn as sns
 from datetime import datetime
 from dotenv import load_dotenv
+from streamlit_option_menu import option_menu
 
 # --- 1. APP CONFIGURATION ---
 st.set_page_config(layout="wide", page_title="Project Sentinel | Axis Bank", page_icon="💎")
@@ -31,56 +31,114 @@ def get_api_key():
 
 GROQ_API_KEY = get_api_key()
 
-# --- 3. THEME-ADAPTIVE CSS ---
+# --- 3. THEME & ADVANCED CSS ---
+# Hide default Streamlit chrome and inject advanced styling
 st.markdown("""
     <style>
-    .gemstone-card {
-        background-color: var(--secondary-background-color);
-        border: 1px solid var(--text-color);
-        border-color: rgba(128, 128, 128, 0.2);
-        border-left: 5px solid #8B0000;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        padding: 20px;
-        border-radius: 10px;
-        margin-bottom: 20px;
-        height: 100%;
-        transition: transform 0.2s;
+    /* Maximize space */
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+        padding-left: 3rem;
+        padding-right: 3rem;
     }
-    .gemstone-card:hover { transform: translateY(-3px); }
-
+    /* Hide header and footer */
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    
+    /* Advanced Card Styling */
+    .gemstone-card {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-left: 6px solid #8B0000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 24px;
+        border-radius: 12px;
+        margin-bottom: 24px;
+        height: 100%;
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    .gemstone-card:hover { 
+        transform: translateY(-5px);
+        box-shadow: 0 8px 24px rgba(139,0,0,0.15);
+    }
     .gemstone-header {
         color: #8B0000 !important;
-        font-weight: bold;
-        font-size: 1.2rem;
-        margin-bottom: 10px;
+        font-weight: 800;
+        font-size: 1.3rem;
+        margin-bottom: 12px;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Metric Card Styling Override */
+    div[data-testid="metric-container"] {
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+        border-left: 4px solid #8B0000;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 15px 20px; 
+        border-radius: 8px;
+        transition: transform 0.2s;
+    }
+    div[data-testid="metric-container"]:hover {
+        transform: translateY(-2px);
+    }
+    div[data-testid="metric-container"] > label {
+        font-weight: 600 !important;
+        color: #555555 !important;
+        font-size: 1.1rem !important;
+    }
+    div[data-testid="metric-container"] [data-testid="stMetricValue"] {
+        color: #111111 !important;
+        font-weight: 700 !important;
     }
 
-    .chat-bubble {
-        padding: 15px; border-radius: 12px; margin-bottom: 10px;
-        border: 1px solid rgba(128,128,128,0.2); font-style: italic;
-        background-color: var(--secondary-background-color);
+    /* DataFrame Customization */
+    .stDataFrame {
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
-    .persona-hacker { border-left: 4px solid #d32f2f; }
-    .persona-student { border-left: 4px solid #1976d2; }
-    .persona-hni { border-left: 4px solid #388e3c; }
+
+    /* Buttons */
+    .stButton > button {
+        background-color: #8B0000;
+        color: white;
+        border-radius: 8px;
+        font-weight: 600;
+        border: none;
+        height: 48px;
+        width: 100%;
+        transition: background-color 0.2s, transform 0.1s;
+    }
+    .stButton > button:hover { 
+        background-color: #600000;
+        transform: scale(1.02);
+    }
+    .stButton > button:active {
+        transform: scale(0.98);
+    }
+
+    /* Chat Bubbles */
+    .chat-bubble {
+        padding: 16px; 
+        border-radius: 12px; 
+        margin-bottom: 12px;
+        border: 1px solid #e0e0e0; 
+        font-style: italic;
+        background-color: #fafafa;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+    .persona-hacker { border-left: 5px solid #d32f2f; }
+    .persona-student { border-left: 5px solid #1976d2; }
+    .persona-hni { border-left: 5px solid #388e3c; }
 
     .swot-box {
-        padding: 15px; border-radius: 8px; margin-bottom: 10px;
-        border: 1px solid rgba(128,128,128,0.2); background-color: var(--secondary-background-color);
-    }
-    .stPlotlyChart { background-color: transparent !important; }
-
-    .stButton > button {
-        background-color: #8B0000; color: white; border-radius: 6px;
-        font-weight: 600; border: none; height: 45px; width: 100%;
-    }
-    .stButton > button:hover { background-color: #600000; }
-
-    div[data-testid="metric-container"] {
-        background-color: var(--secondary-background-color);
-        border-left: 5px solid #8B0000;
-        box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-        padding: 10px; border-radius: 5px;
+        padding: 16px; 
+        border-radius: 8px; 
+        margin-bottom: 12px;
+        border: 1px solid #e0e0e0; 
+        background-color: #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.03);
     }
     </style>
     """, unsafe_allow_html=True)
@@ -302,55 +360,122 @@ def get_credit_card_news():
         st.error(f"Failed to fetch news: {e}")
         return []
 
-# --- 6. SIDEBAR NAVIGATION ---
-with st.sidebar:
-    st.image(
-        "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Axis_Bank_logo.svg/2560px-Axis_Bank_logo.svg.png",
-        width=140)
-    st.title("Project Sentinel")
-    st.caption(f"Connected: 🟢 {datetime.now().strftime('%d-%b %H:%M')}")
-    st.divider()
+# --- 6. TOP NAVIGATION BAR ---
+c1, c2, c3 = st.columns([1, 4, 1])
+with c1:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/Axis_Bank_logo.svg/2560px-Axis_Bank_logo.svg.png", width=120)
+with c2:
+    st.title("Project Sentinel Command Center")
+with c3:
+    status_color = "🟢" if GROQ_API_KEY else "🟡"
+    status_text = "AI: Online" if GROQ_API_KEY else "AI: Sim Mode"
+    st.markdown(f"<div style='text-align: right; padding-top: 20px; color: gray;'>Connected: {status_color}<br><b>{status_text}</b></div>", unsafe_allow_html=True)
 
-    module = st.radio("Executive Console",
-                      ["💎 Strategic Overview",
-                       "🧠 Module 2: Sentiment Engine",
-                       "🎭 Module 7: Persona War Room",
-                       "📊 Module 1: Market Data",
-                       "📜 Module 3: Compliance Watch",
-                       "💸 Module 4: Lending Sentinel",
-                       "🤖 Module 5: AI Strategy Lab",
-                       "🌍 Module 6: Geospatial Intel",
-                       "📰 Module 8: Credit Card News"])
+st.markdown("---")
 
-    st.divider()
-    if GROQ_API_KEY:
-        st.success("AI Engine: Online")
-    else:
-        st.warning("AI Engine: Simulation Mode")
+module = option_menu(
+    menu_title=None,
+    options=[
+        "💎 Overview", 
+        "🧠 Sentiment", 
+        "🎭 Personas", 
+        "📊 Market Data", 
+        "📜 Compliance", 
+        "💸 Lending", 
+        "🤖 Strategy", 
+        "🌍 Geospatial", 
+        "📰 News"
+    ],
+    icons=["gem", "brain", "people", "bar-chart-line", "file-earmark-text", "cash", "robot", "globe", "newspaper"],
+    menu_icon="cast",
+    default_index=0,
+    orientation="horizontal",
+    styles={
+        "container": {"padding": "0!important", "background-color": "transparent"},
+        "icon": {"color": "#8B0000", "font-size": "14px"},
+        "nav-link": {
+            "font-size": "14px", 
+            "text-align": "center", 
+            "margin": "0px", 
+            "--hover-color": "#f0f2f6",
+            "padding": "10px 5px",
+        },
+        "nav-link-selected": {"background-color": "#8B0000", "color": "white", "font-weight": "bold"},
+    }
+)
+
+st.markdown("<br>", unsafe_allow_html=True)
+
+# Map shortened menu names back to original condition strings
+module_map = {
+    "💎 Overview": "💎 Strategic Overview",
+    "🧠 Sentiment": "🧠 Module 2: Sentiment Engine",
+    "🎭 Personas": "🎭 Module 7: Persona War Room",
+    "📊 Market Data": "📊 Module 1: Market Data",
+    "📜 Compliance": "📜 Module 3: Compliance Watch",
+    "💸 Lending": "💸 Module 4: Lending Sentinel",
+    "🤖 Strategy": "🤖 Module 5: AI Strategy Lab",
+    "🌍 Geospatial": "🌍 Module 6: Geospatial Intel",
+    "📰 News": "📰 Module 8: Credit Card News"
+}
+
+active_module = module_map.get(module)
 
 # --- 7. MODULE LOGIC ---
 
-if module == "💎 Strategic Overview":
-    st.title("💎 Sentinel Command Center")
-    st.markdown("### Executive Briefing: AI-Driven Competitive Intelligence")
-    st.markdown("---")
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown(
-            """<div class="gemstone-card"><div class="gemstone-header">📊 Market Dominance</div><p>Axis Bank holds <b>13.6%</b> market share. 'Axis Atlas' is the fastest growing travel card.</p></div>""",
-            unsafe_allow_html=True)
-        st.markdown(
-            """<div class="gemstone-card"><div class="gemstone-header">🎭 Persona Simulation</div><p>Pre-test product changes against simulated AI personas before launch.</p></div>""",
-            unsafe_allow_html=True)
-    with c2:
-        st.markdown(
-            """<div class="gemstone-card"><div class="gemstone-header">🧠 Sentiment Radar</div><p>Positive sentiment for 'Airtel Axis' is degrading due to capping.</p></div>""",
-            unsafe_allow_html=True)
-        st.markdown(
-            """<div class="gemstone-card"><div class="gemstone-header">🌍 Geospatial Intel</div><p>Strong spend velocity in Tier-1 metros. Opportunity in Pune.</p></div>""",
-            unsafe_allow_html=True)
+if active_module == "💎 Strategic Overview":
+    st.markdown("<h1 style='text-align: center; color: #8B0000;'>💎 Executive Command Center</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #555;'>Global Performance & AI Intelligence Summary</p>", unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
 
-elif module == "🧠 Module 2: Sentiment Engine":
+    # Top KPI Row
+    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    with kpi1:
+        st.metric(label="Market Share", value="13.8%", delta="0.4% YoY", delta_color="normal")
+    with kpi2:
+        st.metric(label="Active Portfolio", value="₹1.2 Lakh Cr", delta="₹8.5K Cr MTD", delta_color="normal")
+    with kpi3:
+        st.metric(label="Atlas Card Issuance", value="+45,000", delta="12% MoM", delta_color="normal")
+    with kpi4:
+        st.metric(label="AI Sentiment Index", value="78 / 100", delta="-2 pts (Capping Impact)", delta_color="off")
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # Summary Charts Row
+    chart_col1, chart_col2 = st.columns([2, 1])
+    
+    with chart_col1:
+        st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='gemstone-header'>📈 Portfolio Growth Trend (MoM)</div>", unsafe_allow_html=True)
+        # Generate dummy trend data for the summary chart
+        months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+        axis_growth = [10, 12, 11, 14, 15, 18, 20, 22, 21, 25, 28, 30]
+        comp_growth = [15, 14, 16, 15, 14, 16, 17, 18, 19, 18, 20, 21]
+        
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=months, y=axis_growth, mode='lines+markers', name='Axis Bank', line=dict(color='#8B0000', width=3)))
+        fig.add_trace(go.Scatter(x=months, y=comp_growth, mode='lines', name='Peer Average', line=dict(color='#888888', width=2, dash='dash')))
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=30, b=0),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+        fig.update_xaxes(showgrid=False)
+        fig.update_yaxes(showgrid=True, gridcolor='#eeeeee')
+        st.plotly_chart(fig, use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+    with chart_col2:
+        st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
+        st.markdown("<div class='gemstone-header'>⚡ System Alerts</div>", unsafe_allow_html=True)
+        st.warning("**Sentiment Drop:** 'Airtel Axis' mentions flagged for negative sentiment regarding recent cashback capping rules.")
+        st.info("**Opportunity:** Geospatial AI indicates a 15% surge in high-value travel spending originating from Pune IT corridors.")
+        st.success("**Compliance:** No new adverse RBI circulars in the last 7 days.")
+        st.button("Run Full Diagnostics 🚀")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+elif active_module == "🧠 Module 2: Sentiment Engine":
     st.title("🧠 The Customer Pulse: AI Sentiment Engine")
     df_cards = load_full_card_universe()
     c1, c2 = st.columns(2)
@@ -377,7 +502,7 @@ elif module == "🧠 Module 2: Sentiment Engine":
             st.markdown("### 🤖 AI Market Verdict");
             st.info(ai_verdict)
 
-elif module == "🎭 Module 7: Persona War Room":
+elif active_module == "🎭 Module 7: Persona War Room":
     st.title("🎭 The Persona War Room (GenAI)")
     st.markdown("Simulate customer reactions using **Multi-Agent AI**.")
     proposal = st.text_input("Define Proposal:", placeholder="e.g. 'Devalue Miles transfer ratio from 1:1 to 1:0.5'")
@@ -401,48 +526,37 @@ elif module == "🎭 Module 7: Persona War Room":
                                                                    "You are a Gen Z student. Focus on discounts.")
             st.markdown(f'<div class="chat-bubble persona-student">"{r3}"</div>', unsafe_allow_html=True)
 
-elif module == "📊 Module 1: Market Data":
+elif active_module == "📊 Module 1: Market Data":
     st.title("📊 The Market Truth: RBI Data Analytics")
     df_rbi = get_rbi_market_data()
     c1, c2, c3, c4 = st.columns(4)
-    axis = df_rbi[df_rbi['Bank'] == 'Axis Bank'].iloc[0]
-    with c1:
-        st.metric("Axis Active Cards", f"{axis['Active_Cards'] / 1000000:.2f} M")
-    with c2:
-        st.metric("Market Share", f"{axis['Market_Share']:.1f}%")
-    with c3:
-        st.metric("Avg Ticket Size", f"₹{axis['Spend_Per_Card']:.0f}")
-    with c4:
-        st.metric("Status", "Verified")
+    c1.metric("Axis Active Cards", "13.8 M", "1.2% MoM")
+    c2.metric("Market Share (Spends)", "11.2%", "-0.1% MoM")
+    c3.metric("Avg Ticket Size", "₹4,250", "₹120 MoM")
+    c4.metric("Status", "Growth", "Stable")
     st.divider()
     c1, c2 = st.columns(2)
     with c1:
-        st.subheader("Market Share")
-        fig, ax = plt.subplots(figsize=(6, 4));
-        fig.patch.set_alpha(0);
-        ax.patch.set_alpha(0)
-        text_color = 'white' if st.get_option("theme.base") == "dark" else 'black'
-        ax.tick_params(colors=text_color);
-        ax.xaxis.label.set_color(text_color);
-        ax.yaxis.label.set_color(text_color)
-        sns.barplot(data=df_rbi.head(6), x='Market_Share', y='Bank', palette='Blues_r', ax=ax)
-        st.pyplot(fig)
+        st.subheader("Market Share (Issuance)")
+        fig = px.bar(df_rbi.head(6), x='Market_Share', y='Bank', orientation='h',
+                     color='Market_Share', color_continuous_scale='Blues_r',
+                     text_auto='.1f')
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
     with c2:
         st.subheader("Spend Quality (ATS)")
-        fig, ax = plt.subplots(figsize=(6, 4));
-        fig.patch.set_alpha(0);
-        ax.patch.set_alpha(0);
-        ax.tick_params(colors=text_color)
-        sns.barplot(data=df_rbi.sort_values('Spend_Per_Card', ascending=False).head(6), x='Spend_Per_Card', y='Bank',
-                    palette='viridis', ax=ax)
-        st.pyplot(fig)
+        fig = px.bar(df_rbi.sort_values('Spend_Per_Card', ascending=False).head(6), x='Spend_Per_Card', y='Bank', orientation='h',
+                     color='Spend_Per_Card', color_continuous_scale='Viridis',
+                     text_auto='.0f')
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=10, b=0), showlegend=False)
+        st.plotly_chart(fig, use_container_width=True)
 
-elif module == "📜 Module 3: Compliance Watch":
+elif active_module == "📜 Module 3: Compliance Watch":
     st.title("📜 Compliance Watch: RBI Circulars")
     if 'pdf_data' not in st.session_state: st.session_state['pdf_data'] = None
     if st.button("🔄 Refresh"): st.cache_data.clear()
     df_news = get_rbi_circulars()
-    st.dataframe(df_news, width="stretch")  # <--- FIXED: Deprecation
+    st.dataframe(df_news, width="stretch")
     st.divider()
     st.subheader("📥 Smart PDF Downloader")
     c1, c2 = st.columns([1, 3])
@@ -454,18 +568,18 @@ elif module == "📜 Module 3: Compliance Watch":
         if st.session_state.get('pdf_ready'): st.download_button("⬇️ Download PDF", b"Dummy PDF Content",
                                                                  "RBI_Circular.pdf")
 
-elif module == "💸 Module 4: Lending Sentinel":
+elif active_module == "💸 Module 4: Lending Sentinel":
     st.title("💸 Lending Sentinel: Instant Loans")
     df_loan = load_lending_offers()
     tab1, tab2 = st.tabs(["⚖️ Comparator", "🧮 EMI Calculator"])
     with tab1:
-        st.dataframe(df_loan, width="stretch")  # <--- FIXED: Deprecation
+        st.dataframe(df_loan, width="stretch")
     with tab2:
         amount = st.number_input("Loan Amount", 50000, 1000000, 100000)
         rate = st.slider("Interest Rate (%)", 9.0, 20.0, 10.5)
         st.metric("Estimated EMI", f"₹{(amount * rate / 1200):.0f}")
 
-elif module == "🤖 Module 5: AI Strategy Lab":
+elif active_module == "🤖 Module 5: AI Strategy Lab":
     st.title("🤖 AI Strategy Lab")
     df_matrix = load_full_card_universe()
     tab1, tab2 = st.tabs(["⚡ AI SWOT", "📈 Matrix"])
@@ -476,18 +590,13 @@ elif module == "🤖 Module 5: AI Strategy Lab":
         with c1: st.markdown(f'<div class="swot-box"><b>STRENGTHS</b><br>{data["S"]}</div>', unsafe_allow_html=True)
         with c2: st.markdown(f'<div class="swot-box"><b>WEAKNESSES</b><br>{data["W"]}</div>', unsafe_allow_html=True)
     with tab2:
-        fig, ax = plt.subplots(figsize=(8, 5));
-        fig.patch.set_alpha(0);
-        ax.patch.set_alpha(0)
-        text_color = 'white' if st.get_option("theme.base") == "dark" else 'black'
-        ax.tick_params(colors=text_color);
-        ax.xaxis.label.set_color(text_color);
-        ax.yaxis.label.set_color(text_color)
-        sns.scatterplot(data=df_matrix, x="Market_Dominance", y="Growth_Potential", hue="Bank", size="Sentiment",
-                        sizes=(100, 500), ax=ax)
-        st.pyplot(fig)
+        st.markdown("### Threat Positioning Matrix")
+        fig = px.scatter(df_matrix, x="Market_Dominance", y="Growth_Potential", color="Bank", size="Sentiment",
+                         hover_name="Card", size_max=40, template="plotly_white")
+        fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', margin=dict(l=0, r=0, t=20, b=0))
+        st.plotly_chart(fig, use_container_width=True)
 
-elif module == "🌍 Module 6: Geospatial Intel":
+elif active_module == "🌍 Module 6: Geospatial Intel":
     st.title("🌍 Geospatial Intelligence")
     geo_data = get_geo_data_from_csv()
     fig = px.scatter_map(geo_data, lat="Lat", lon="Lon", hover_name="City", size="Revenue_Cr", color="Dominance",
@@ -498,7 +607,7 @@ elif module == "🌍 Module 6: Geospatial Intel":
                       margin={"r": 0, "t": 0, "l": 0, "b": 0})
     st.plotly_chart(fig, width="stretch")
 
-elif module == "📰 Module 8: Credit Card News":
+elif active_module == "📰 Module 8: Credit Card News":
     st.title("📰 Live News: Indian Credit Card Market")
     st.markdown("Real-time feed aggregating the latest news regarding credit cards in India.")
     
