@@ -384,9 +384,10 @@ module = option_menu(
         "💸 Lending", 
         "🤖 Strategy", 
         "🌍 Geospatial", 
-        "📰 News"
+        "📰 News",
+        "🧬 Digital Twin"
     ],
-    icons=["gem", "brain", "people", "bar-chart-line", "file-earmark-text", "cash", "robot", "globe", "newspaper"],
+    icons=["gem", "brain", "people", "bar-chart-line", "file-earmark-text", "cash", "robot", "globe", "newspaper", "person-badge"],
     menu_icon="cast",
     default_index=0,
     orientation="horizontal",
@@ -416,7 +417,8 @@ module_map = {
     "💸 Lending": "💸 Module 4: Lending Sentinel",
     "🤖 Strategy": "🤖 Module 5: AI Strategy Lab",
     "🌍 Geospatial": "🌍 Module 6: Geospatial Intel",
-    "📰 News": "📰 Module 8: Credit Card News"
+    "📰 News": "📰 Module 8: Credit Card News",
+    "🧬 Digital Twin": "🧬 Module 9: Digital Twin"
 }
 
 active_module = module_map.get(module)
@@ -686,3 +688,103 @@ elif active_module == "📰 Module 8: Credit Card News":
         # Calculate dynamic height based on items
         rows = (len(news_data) // 4) + 1  # Approximate 4 cols per row
         components.html(full_html, height=rows * 230, scrolling=False)
+
+elif active_module == "🧬 Module 9: Digital Twin":
+    st.title("🧬 Digital Twin & AI Nudge Engine")
+    st.markdown("Simulate a customer profile to dynamically assign their behavioral Persona and generate targeted nudges using K-Means and Random Forest models.")
+
+    try:
+        import joblib
+        import os
+        
+        if not (os.path.exists("digital_twin_scaler.pkl") and os.path.exists("digital_twin_cluster_model.pkl") and os.path.exists("digital_twin_risk_model.pkl")):
+            st.warning("⚠️ ML Models not found. Please run `python train_digital_twin_model.py` first.")
+            st.stop()
+            
+        scaler = joblib.load("digital_twin_scaler.pkl")
+        kmeans = joblib.load("digital_twin_cluster_model.pkl")
+        rf_model = joblib.load("digital_twin_risk_model.pkl")
+        
+        # UI
+        st.markdown("### 🎛️ Simulation Engine")
+        c1, c2 = st.columns([1, 2])
+        
+        with c1:
+            st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='gemstone-header'>Profile Builder</div>", unsafe_allow_html=True)
+            
+            with st.form("digital_twin_form"):
+                age = st.slider("Age", 18, 80, 25)
+                income = st.number_input("Annual Income (₹)", 100000, 5000000, 450000, step=50000)
+                credit_score = st.slider("Credit Score", 300, 900, 650)
+                credit_lines = st.number_input("Number of Credit Lines", 0, 20, 2)
+                utilization = st.slider("Credit Utilization Ratio (%)", 0, 100, 30) / 100.0
+                dt_ratio = st.slider("Debt-to-Income Ratio (%)", 0, 100, 40) / 100.0
+                spend = st.number_input("Total Spend Last Year (₹)", 0, 5000000, 150000, step=10000)
+                
+                submitted = st.form_submit_button("Simulate Twin 🚀")
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        if submitted:
+            with c2:
+                # 1. Prepare data
+                input_data = pd.DataFrame([{
+                    'Age': age,
+                    'Annual_Income': income,
+                    'Credit_Score': credit_score,
+                    'Number_of_Credit_Lines': credit_lines,
+                    'Credit_Utilization_Ratio': utilization,
+                    'Debt_To_Income_Ratio': dt_ratio,
+                    'Total_Spend_Last_Year': spend
+                }])
+                
+                # 2. Predict
+                scaled_data = scaler.transform(input_data)
+                cluster_id = kmeans.predict(scaled_data)[0]
+                risk_prob = rf_model.predict_proba(scaled_data)[0][1] # Probability of default
+                
+                # 3. Nudge Rules Engine
+                personas = {
+                    0: {"name": "Young Credit Builders", "icon": "🌱", "desc": "Lower income/spend, building history."},
+                    1: {"name": "High-Value Spenders", "icon": "👑", "desc": "High income, massive annual spend."},
+                    2: {"name": "Balanced Mainstream", "icon": "⚖️", "desc": "Average metrics across the board."},
+                    3: {"name": "High Utilization/Risk", "icon": "⚠️", "desc": "High debt and utilization levels."}
+                }
+                
+                persona = personas.get(cluster_id, {"name": f"Cluster {cluster_id}", "icon": "👤", "desc": "Standard Profile"})
+                
+                # Nudge Logic
+                if risk_prob > 0.6:
+                    nudge = "🚨 **Risk Mitigation:** Send push notification offering EMI conversion on recent large transactions to prevent default."
+                    nudge_color = "#8B0000"
+                elif cluster_id == 1:
+                    nudge = "💳 **Premium Upsell:** Highly engaged user. Nudge with invite-only Magnus/Burgundy upgrade with zero-forex benefits."
+                    nudge_color = "#1976d2"
+                elif cluster_id == 0 and income > 500000:
+                    nudge = "✈️ **Travel Catalyst:** High income but low spend. Nudge with 5X rewards on MakeMyTrip/Cleartrip bookings."
+                    nudge_color = "#388e3c"
+                elif age < 25 and utilization < 0.2:
+                    nudge = "🛍️ **GenZ Lifestyle:** Low utilization. Nudge with conditional Zomato/Swiggy discounts to increase frequency."
+                    nudge_color = "#e65100"
+                else:
+                    nudge = "📊 **Engagement:** Send personalized monthly spend summary highlighting unused category benefits."
+                    nudge_color = "#555555"
+                
+                # 4. Display Results
+                st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
+                st.markdown(f"<h2 style='margin-top:0;'>{persona['icon']} Persona: {persona['name']}</h2>", unsafe_allow_html=True)
+                st.markdown(f"*{persona['desc']}*")
+                
+                col_a, col_b = st.columns(2)
+                col_a.metric("Assigned Cluster ID", f"Cluster {cluster_id}")
+                risk_color = "normal" if risk_prob < 0.4 else "off"
+                col_b.metric("Predicted Default Risk", f"{risk_prob*100:.1f}%", delta="High Risk" if risk_prob > 0.6 else "Low Risk", delta_color=risk_color)
+                
+                st.markdown("---")
+                st.markdown("<div class='gemstone-header'>🤖 Generated AI Nudge</div>", unsafe_allow_html=True)
+                st.markdown(f"<div style='background-color: #f8f9fa; padding: 15px; border-left: 5px solid {nudge_color}; border-radius: 5px; font-size: 1.1rem;'>{nudge}</div>", unsafe_allow_html=True)
+                
+                st.markdown("</div>", unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"Error loading models or running prediction: {e}")

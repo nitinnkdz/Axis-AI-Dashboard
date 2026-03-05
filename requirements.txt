@@ -6,3 +6,6 @@ plotly
 streamlit-option-menu
 python-dotenv
 graphviz
+scikit-learn
+joblib
+pyarrow
