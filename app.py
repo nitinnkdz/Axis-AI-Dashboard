@@ -691,100 +691,196 @@ elif active_module == "📰 Module 8: Credit Card News":
 
 elif active_module == "🧬 Module 9: Digital Twin":
     st.title("🧬 Digital Twin & AI Nudge Engine")
-    st.markdown("Simulate a customer profile to dynamically assign their behavioral Persona and generate targeted nudges using K-Means and Random Forest models.")
+    st.markdown("Simulate a customer profile to dynamically assign their behavioral Persona and generate targeted nudges using K-Means and Deep Learning models.")
 
     try:
         import joblib
         import os
         
-        if not (os.path.exists("digital_twin_scaler.pkl") and os.path.exists("digital_twin_cluster_model.pkl") and os.path.exists("digital_twin_risk_model.pkl")):
+        if not (os.path.exists("digital_twin_scaler.pkl") and os.path.exists("digital_twin_cluster_model.pkl") and os.path.exists("digital_twin_dl_model.pkl") and os.path.exists("digital_twin_viz_data.pkl")):
             st.warning("⚠️ ML Models not found. Please run `python train_digital_twin_model.py` first.")
             st.stop()
             
         scaler = joblib.load("digital_twin_scaler.pkl")
         kmeans = joblib.load("digital_twin_cluster_model.pkl")
-        rf_model = joblib.load("digital_twin_risk_model.pkl")
+        dl_model = joblib.load("digital_twin_dl_model.pkl")
+        viz_data = joblib.load("digital_twin_viz_data.pkl")
         
-        # UI
-        st.markdown("### 🎛️ Simulation Engine")
-        c1, c2 = st.columns([1, 2])
-        
-        with c1:
-            st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='gemstone-header'>Profile Builder</div>", unsafe_allow_html=True)
-            
-            with st.form("digital_twin_form"):
-                age = st.slider("Age", 18, 80, 25)
-                income = st.number_input("Annual Income (₹)", 100000, 5000000, 450000, step=50000)
-                credit_score = st.slider("Credit Score", 300, 900, 650)
-                credit_lines = st.number_input("Number of Credit Lines", 0, 20, 2)
-                utilization = st.slider("Credit Utilization Ratio (%)", 0, 100, 30) / 100.0
-                dt_ratio = st.slider("Debt-to-Income Ratio (%)", 0, 100, 40) / 100.0
-                spend = st.number_input("Total Spend Last Year (₹)", 0, 5000000, 150000, step=10000)
-                
-                submitted = st.form_submit_button("Simulate Twin 🚀")
-            st.markdown("</div>", unsafe_allow_html=True)
+        # Tabs for Advanced Visual Insights
+        tab1, tab2, tab3 = st.tabs(["🎛️ AI Simulator", "🕸️ Cluster Discovery", "🧠 Model Interpretability"])
 
-        if submitted:
-            with c2:
-                # 1. Prepare data
-                input_data = pd.DataFrame([{
-                    'Age': age,
-                    'Annual_Income': income,
-                    'Credit_Score': credit_score,
-                    'Number_of_Credit_Lines': credit_lines,
-                    'Credit_Utilization_Ratio': utilization,
-                    'Debt_To_Income_Ratio': dt_ratio,
-                    'Total_Spend_Last_Year': spend
-                }])
-                
-                # 2. Predict
-                scaled_data = scaler.transform(input_data)
-                cluster_id = kmeans.predict(scaled_data)[0]
-                risk_prob = rf_model.predict_proba(scaled_data)[0][1] # Probability of default
-                
-                # 3. Nudge Rules Engine
-                personas = {
-                    0: {"name": "Young Credit Builders", "icon": "🌱", "desc": "Lower income/spend, building history."},
-                    1: {"name": "High-Value Spenders", "icon": "👑", "desc": "High income, massive annual spend."},
-                    2: {"name": "Balanced Mainstream", "icon": "⚖️", "desc": "Average metrics across the board."},
-                    3: {"name": "High Utilization/Risk", "icon": "⚠️", "desc": "High debt and utilization levels."}
-                }
-                
-                persona = personas.get(cluster_id, {"name": f"Cluster {cluster_id}", "icon": "👤", "desc": "Standard Profile"})
-                
-                # Nudge Logic
-                if risk_prob > 0.6:
-                    nudge = "🚨 **Risk Mitigation:** Send push notification offering EMI conversion on recent large transactions to prevent default."
-                    nudge_color = "#8B0000"
-                elif cluster_id == 1:
-                    nudge = "💳 **Premium Upsell:** Highly engaged user. Nudge with invite-only Magnus/Burgundy upgrade with zero-forex benefits."
-                    nudge_color = "#1976d2"
-                elif cluster_id == 0 and income > 500000:
-                    nudge = "✈️ **Travel Catalyst:** High income but low spend. Nudge with 5X rewards on MakeMyTrip/Cleartrip bookings."
-                    nudge_color = "#388e3c"
-                elif age < 25 and utilization < 0.2:
-                    nudge = "🛍️ **GenZ Lifestyle:** Low utilization. Nudge with conditional Zomato/Swiggy discounts to increase frequency."
-                    nudge_color = "#e65100"
-                else:
-                    nudge = "📊 **Engagement:** Send personalized monthly spend summary highlighting unused category benefits."
-                    nudge_color = "#555555"
-                
-                # 4. Display Results
+        with tab1:
+            st.markdown("### 🎛️ Simulation Engine")
+            c1, c2 = st.columns([1, 2])
+            
+            with c1:
                 st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
-                st.markdown(f"<h2 style='margin-top:0;'>{persona['icon']} Persona: {persona['name']}</h2>", unsafe_allow_html=True)
-                st.markdown(f"*{persona['desc']}*")
+                st.markdown("<div class='gemstone-header'>Profile Builder</div>", unsafe_allow_html=True)
                 
-                col_a, col_b = st.columns(2)
-                col_a.metric("Assigned Cluster ID", f"Cluster {cluster_id}")
-                risk_color = "normal" if risk_prob < 0.4 else "off"
-                col_b.metric("Predicted Default Risk", f"{risk_prob*100:.1f}%", delta="High Risk" if risk_prob > 0.6 else "Low Risk", delta_color=risk_color)
-                
-                st.markdown("---")
-                st.markdown("<div class='gemstone-header'>🤖 Generated AI Nudge</div>", unsafe_allow_html=True)
-                st.markdown(f"<div style='background-color: #f8f9fa; padding: 15px; border-left: 5px solid {nudge_color}; border-radius: 5px; font-size: 1.1rem;'>{nudge}</div>", unsafe_allow_html=True)
-                
+                with st.form("digital_twin_form"):
+                    age = st.slider("Age", 18, 80, 25)
+                    income = st.number_input("Annual Income (₹)", 100000, 5000000, 450000, step=50000)
+                    credit_score = st.slider("Credit Score", 300, 900, 650)
+                    credit_lines = st.number_input("Number of Credit Lines", 0, 20, 2)
+                    utilization = st.slider("Credit Utilization Ratio (%)", 0, 100, 30) / 100.0
+                    dt_ratio = st.slider("Debt-to-Income Ratio (%)", 0, 100, 40) / 100.0
+                    spend = st.number_input("Total Spend Last Year (₹)", 0, 5000000, 150000, step=10000)
+                    total_trans = st.number_input("Annual Transactions", 0, 5000, 120, step=10)
+                    avg_tx = st.number_input("Avg Tx Size (₹)", 0, 50000, 1500, step=100)
+                    max_tx = st.number_input("Max Tx Size (₹)", 0, 500000, 25000, step=1000)
+                    min_tx = st.number_input("Min Tx Size (₹)", 0, 5000, 50, step=10)
+                    categories = st.slider("Unique Categories", 1, 50, 15)
+                    cities = st.slider("Unique Cities", 1, 20, 3)
+                    sss = st.slider("Social Status Score (SSS)", 0, 100, 50)
+                    
+                    submitted = st.form_submit_button("Simulate Twin 🚀")
                 st.markdown("</div>", unsafe_allow_html=True)
 
+            if submitted:
+                with c2:
+                    # 1. Prepare data
+                    input_data = pd.DataFrame([{
+                        'Age': age,
+                        'Annual_Income': income,
+                        'Credit_Score': credit_score,
+                        'Number_of_Credit_Lines': credit_lines,
+                        'Credit_Utilization_Ratio': utilization,
+                        'Debt_To_Income_Ratio': dt_ratio,
+                        'Total_Spend_Last_Year': spend,
+                        'Total_Transactions': total_trans,
+                        'Avg_Transaction_Amount': avg_tx,
+                        'Max_Transaction_Amount': max_tx,
+                        'Min_Transaction_Amount': min_tx,
+                        'Unique_Merchant_Categories': categories,
+                        'Unique_Transaction_Cities': cities,
+                        'sss': sss
+                    }])
+                    
+                    # 2. Predict
+                    scaled_data = scaler.transform(input_data)
+                    cluster_id = kmeans.predict(scaled_data)[0]
+                    
+                    # 3. Nudge Rules Engine based on Deep Learning and KMeans
+                    personas = {
+                        1: {"name": "High-Value Spenders", "icon": "👑", "desc": "High income, massive annual spend."},
+                        3: {"name": "Stable Savers", "icon": "⚖️", "desc": "Steady, consistent spending."},
+                        0: {"name": "Credit Starters", "icon": "🌱", "desc": "Younger, building history."},
+                        2: {"name": "Debt-Strugglers", "icon": "⚠️", "desc": "High utilization, lower scores."}
+                    }
+                    
+                    persona = personas.get(cluster_id, {"name": f"Cluster {cluster_id}", "icon": "👤", "desc": "Standard Profile"})
+                    
+                    if cluster_id == 2:
+                        nudge = "🚨 **Risk Mitigation:** High Utilization profile detected. Mute premium offers. Nudge with EMI conversion and balance transfer options."
+                        nudge_color = "#8B0000"
+                    elif cluster_id == 1:
+                        nudge = "💳 **Premium Upsell:** Ultra-high engagement user. Send push notification for invite-only Magnus/Burgundy upgrade with zero-forex benefits."
+                        nudge_color = "#1976d2"
+                    elif cluster_id == 0 and age < 25:
+                        nudge = "🛍️ **GenZ Activation:** Low spend but high engagement potential. Nudge with conditional Zomato/Swiggy 50% off weekend discounts."
+                        nudge_color = "#e65100"
+                    elif cluster_id == 3 and income > 1500000:
+                        nudge = "✈️ **Travel Catalyst:** Stable income but low discretionary spend. Target with 5X rewards on MakeMyTrip to increase share-of-wallet."
+                        nudge_color = "#388e3c"
+                    else:
+                        nudge = "📊 **Engagement:** Send personalized monthly spend summary highlighting unused category benefits."
+                        nudge_color = "#555555"
+                    
+                    # 4. Display Results
+                    st.markdown("<div class='gemstone-card'>", unsafe_allow_html=True)
+                    st.markdown(f"<h2 style='margin-top:0;'>{persona['icon']} Persona: {persona['name']}</h2>", unsafe_allow_html=True)
+                    st.markdown(f"*{persona['desc']}*")
+                    
+                    st.metric("Assigned K-Means Cluster ID", f"Cluster {cluster_id}")
+                    
+                    st.markdown("---")
+                    st.markdown("<div class='gemstone-header'>🤖 AI Nudge Strategy generated by Rules Engine</div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='background-color: #f8f9fa; padding: 15px; border-left: 5px solid {nudge_color}; border-radius: 5px; font-size: 1.1rem;'>{nudge}</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
+                    
+        with tab2:
+            st.markdown("### 🕸️ Persona Radar (Mathematical Definition)")
+            st.markdown("Visualizing the mathematical cluster centers extracted from the Unsupervised `KMeans` algorithm. This shows what makes the personas fundamentally different across scaled vectors.")
+            
+            # Extract features for radar (subset to make the chart readable)
+            radar_features = ['Annual_Income', 'Total_Spend_Last_Year', 'Credit_Score', 'Credit_Utilization_Ratio', 'Debt_To_Income_Ratio']
+            radar_indices = [viz_data['features'].index(f) for f in radar_features]
+            
+            # Normalize centers 0 to 1 for the radar chart visualization
+            centers = viz_data['cluster_centers_normalized'][:, radar_indices]
+            centers_min = centers.min(axis=0)
+            centers_max = centers.max(axis=0)
+            range_val = np.maximum(centers_max - centers_min, 1e-6)
+            centers_norm = (centers - centers_min) / range_val
+            
+            fig = go.Figure()
+            cluster_names = {1: "High Spenders", 3: "Stable Savers", 0: "Credit Starters", 2: "Debt-Strugglers"}
+            colors = {1: "green", 3: "orange", 0: "blue", 2: "red"}
+            
+            for i in range(4):
+                fig.add_trace(go.Scatterpolar(
+                    r=np.append(centers_norm[i], centers_norm[i][0]),
+                    theta=radar_features + [radar_features[0]],
+                    fill='toself',
+                    name=cluster_names.get(i, f"Cluster {i}"),
+                    line_color=colors.get(i, "gray")
+                ))
+                
+            fig.update_layout(
+                polar=dict(radialaxis=dict(visible=True, range=[0, 1])),
+                showlegend=True,
+                title="Financial Persona Profiles (Normalized Means)",
+                margin=dict(t=50, b=50, l=50, r=50)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+            
+        with tab3:
+            st.markdown("### 🧠 Deep Learning Mathematical Interpretability")
+            st.markdown("Explaining the Supervised Multi-Layer Perceptron (Neural Network) classification model.")
+            
+            c1, c2 = st.columns(2)
+            
+            with c1:
+                st.markdown("**1. What drives the Neural Network?**")
+                st.markdown("Since Deep Learning networks are black boxes, we extract *Permutation Feature Importance*. This measures mathematically how much the network's error increases when a feature's data is randomly shuffled.")
+                
+                # Plot Feature Importances
+                importances = viz_data['dl_feature_importances']
+                # Sort them
+                indices = np.argsort(importances)[::-1]
+                top_n = min(15, len(importances))
+                sorted_features = [viz_data['features'][i] for i in indices[:top_n]]
+                sorted_importances = importances[indices[:top_n]]
+                
+                fig2 = px.bar(
+                    x=sorted_importances[::-1], 
+                    y=sorted_features[::-1], 
+                    orientation='h',
+                    color=sorted_importances[::-1],
+                    color_continuous_scale='Viridis',
+                    title="Top 15 Key Drivers for Persona Classification",
+                    labels={'x': 'Importance Score', 'y': 'Financial Attributes'}
+                )
+                fig2.update_layout(showlegend=False, margin=dict(l=0, r=0, t=40, b=0))
+                st.plotly_chart(fig2, use_container_width=True)
+                
+            with c2:
+                st.markdown("**2. Neural Network Accuracy (Confusion Matrix)**")
+                st.markdown("This matrix shows how well the Deep Learning model predicted the actual K-Means assigned personas. High values on the diagonal indicate strong mathematical viability.")
+                
+                cm = viz_data['dl_confusion_matrix']
+                labels = [cluster_names.get(i, f"Cluster {i}") for i in range(4)]
+                
+                fig3 = px.imshow(cm, 
+                                 labels=dict(x="Predicted Persona", y="True Persona", color="Matches"),
+                                 x=labels, y=labels,
+                                 color_continuous_scale="Blues",
+                                 text_auto=True,
+                                 title="DL Persona Prediction Matrix")
+                fig3.update_layout(margin=dict(l=0, r=0, t=40, b=0))
+                st.plotly_chart(fig3, use_container_width=True)
+
     except Exception as e:
+        import traceback
         st.error(f"Error loading models or running prediction: {e}")
+        st.code(traceback.format_exc())
